@@ -46,7 +46,7 @@ int main( int argc, char* argv[] ) {
   TTree* tree = new TTree( "tree", "" );
 
 
-  int ev;
+  int ev=-1;
   int nch;
   float base     [128];
   float vamp     [128];
@@ -90,10 +90,9 @@ int main( int argc, char* argv[] ) {
         words.push_back(word);
       }
 
-
       if( words[0]=="===" && words[1]=="EVENT" && wasReadingEvent ) {
 
-        if( ev % 25 == 0 ) std::cout << "   ... analyzing event: " << ev << std::endl;
+        if( ev % 100 == 0 ) std::cout << "   ... analyzing event: " << ev << std::endl;
 
         tree->Fill();
  
@@ -108,15 +107,13 @@ int main( int argc, char* argv[] ) {
 
         nch += 1;
 
-        ch            = atoi(words[2] .c_str());
-        ev            = atoi(words[4] .c_str());
-        base     [ch] = atof(words[8] .c_str());
+        ch            = atoi(words[2].c_str());
+        base     [ch] = atof(words[8].c_str());
         vamp     [ch] = atof(words[11].c_str());
         vcharge  [ch] = atof(words[14].c_str());
         letime   [ch] = atof(words[17].c_str());
         tetime   [ch] = atof(words[20].c_str());
         ratecount[ch] = atof(words[23].c_str());
-
 
       } else if( readyForPulseShape && ch>=0 ) {
   
@@ -127,13 +124,20 @@ int main( int argc, char* argv[] ) {
    
       }
 
+      if( words[0]=="===" && words[1]=="EVENT" && wasReadingEvent==false) {
+	ev            = atoi(words[2].c_str());	
+	//std::cout << ev << std::endl;
+      }
+
     } // while get lines
 
   } // if file is good
 
   if( wasReadingEvent )
-    tree->Fill();
-
+    {
+      std::cout << "   ... analyzing event: " << ev << std::endl;
+      tree->Fill();
+    }
 
   fs.close();
 

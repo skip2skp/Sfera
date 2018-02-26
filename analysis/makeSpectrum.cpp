@@ -50,17 +50,16 @@ int main( int argc, char* argv[] ) {
       exit(11);
     }
 
-    std::cout << "charge = " << vcharge[channel] << std::endl;
-      
-    h_charge->Fill(-vcharge[channel]);
+    std::cout << "Event : " << ev << std::endl;
 
-    //for( unsigned i=0; i<1024; ++i ) 
-    //h1->SetBinContent( i+1, pshape[channel][i] );
+    if (iEntry % 100 == 0) 
+      std::cout << "Event : " << ev << std::endl;
+
+    //std::cout << "charge = " << vcharge[channel] << std::endl;
+    h_charge->Fill(fabs(vcharge[channel]));
 
   } // for entries
 
-  //h1->Draw();
-  
   size_t pos = 0;
   std::string prefix;
   if((pos = fileName.find(".")) != std::string::npos) {
@@ -70,13 +69,11 @@ int main( int argc, char* argv[] ) {
   std::string plotsDir(Form("plots/%s", prefix.c_str()));
   system( Form("mkdir -p %s", plotsDir.c_str()) );
 
-  //c1->SaveAs(Form("%s/pulseShape_ev%d_ch%d.eps",plotsDir.c_str(),event,channel));
-  //c1->SaveAs(Form("%s/pulseShape_ev%d_ch%d.pdf",plotsDir.c_str(),event,channel));
-
-  TFile* outfile = TFile::Open("output.root","recreate");
+  TFile* outfile = TFile::Open(Form("%s/histograms_ch%d.root",plotsDir.c_str(),channel),"recreate");
   outfile->cd();
   h_charge->Write();
   outfile->Close();
+  std::cout << "Output file saved: " << Form("%s/histograms_ch%d.root",plotsDir.c_str(),channel) << std::endl;
 
   return 0;
 
