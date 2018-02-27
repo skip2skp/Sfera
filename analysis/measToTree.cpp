@@ -80,7 +80,7 @@ int main( int argc, char* argv[] ) {
 
     while( getline(fs,line) ) {
 
-      std::cout << line << std::endl;
+      //std::cout << line << std::endl;
       line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
 
       std::string delimiter = " ";
@@ -101,7 +101,7 @@ int main( int argc, char* argv[] ) {
 
       if( words[0]=="===" && words[1]=="Event" && wasReadingEvent ) {
 
-        if( ev % 25 == 0 ) std::cout << "   ... analyzing event: " << ev << std::endl;
+        if( ev % 100 == 0 ) std::cout << "   ... analyzing event: " << ev << std::endl;
 
         tree->Fill();
  
@@ -116,7 +116,7 @@ int main( int argc, char* argv[] ) {
         nch += 1;
 
         ch            = atoi(words_cleaned[0].c_str());
-        ev            = atoi(words_cleaned[1].c_str());
+        //ev            = atoi(words_cleaned[1].c_str());
         base     [ch] = atof(words_cleaned[2].c_str());
         vamp     [ch] = atof(words_cleaned[3].c_str());
         vcharge  [ch] = atof(words_cleaned[4].c_str());
@@ -124,7 +124,11 @@ int main( int argc, char* argv[] ) {
         tetime   [ch] = atof(words_cleaned[6].c_str());
         //ratecount[ch] = atof(words_cleaned[15].c_str());
 
+      }
 
+      if( words[0]=="===" && words[1]=="Event" && wasReadingEvent==false ) {
+	ev            = atoi(words[2].c_str());	
+	//std::cout << ev << std::endl;
       }
 
     } // while get lines
@@ -132,8 +136,10 @@ int main( int argc, char* argv[] ) {
   } // if file is good
 
   if( wasReadingEvent )
-    tree->Fill();
-
+    {
+      std::cout << "   ... analyzing event: " << ev << std::endl;
+      tree->Fill();
+    }
 
   fs.close();
 
