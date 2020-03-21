@@ -6,11 +6,6 @@
 #include <string>
 #include <stdlib.h>
 
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/lexical_cast.hpp>
-
-
-
 
 bool isNumber(const std::string& s);
 
@@ -26,9 +21,8 @@ int main( int argc, char* argv[] ) {
 
   std::string fileName(argv[1]);
 
-  if( boost::starts_with(argv[1], "../data/") ) {
-    fileName.erase( 0, 8 );
-  }
+  if( fileName.rfind("../data/",0)==0 )
+    fileName.erase(0, 8);
 
   std::ifstream fs(Form("../data/%s", fileName.c_str()));
   if( !fs.good() ) {
