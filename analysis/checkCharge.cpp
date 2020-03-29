@@ -4,8 +4,6 @@
 #define ERROR_USAGE 1
 #define ERROR_NOTREE 2
 
-#define TOLERANCE 0.05
-
 #define NCH 16
 #define DT 938E-3
 #define CONVERSION 1
