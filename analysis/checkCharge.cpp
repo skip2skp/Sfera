@@ -60,25 +60,23 @@ int main(int argc, char* argv[]) {
 
     tree->GetEntry(entry);
     
-    // dobule diff=0;
+    double diff=0;
 
     for (int channel=0; channel<nch; channel++) {
-
-      std::cout << "Event " << ev << " channel " << channel << "charge" << vcharge[0] <<std::endl;
-
-    }
       
-    //   double sum=0;
+      double sum=0;
       
-    //   for (int i=0; i<1024; i++) {
+      for (int i=0; i<1024; i++) {
 	
-    // 	sum+=pshape[channel][i];
+    	sum+=pshape[channel][i];
 	
-    //   }
+      }
       
-    //   diff=base[channel]-sum*CONVERSION*DT; // fattore di conversione per portare in pC
+      diff=base[channel]-sum*CONVERSION*DT; // fattore di conversione per portare in pC
       
     }
   
+
+  }
 
 }
