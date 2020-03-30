@@ -8,14 +8,17 @@
 #define DT 938E-3
 #define CONVERSION 1
 
+#define EVENT 5638
+#define CHANNEL 10
+
 #include<iostream>
-#include<vector>
+//#include<vector>
 
 #include"TFile.h"
 #include"TTree.h"
 #include"TString.h"
 #include"TRandom3.h"
-#include"TGraph.h"
+//#include"TGraph.h"
 
 int main(int argc, char* argv[]) {
   
@@ -36,43 +39,54 @@ int main(int argc, char* argv[]) {
     exit(ERROR_NOTREE);
   }
 
-  std::vector<double> diffs;
-  std::vector<int> channels;
+  //std::vector<double> diffs;
+  //std::vector<int> channels;
 
   // variabili da leggere: baseline, profilo, integrale calcolato dal digitizer
 
   long int ev;
   int nch;
   double tetime;
-  double* base[NCH], vcharge[NCH], pshape[NCH][1024];
+  double base[NCH], vcharge[NCH], pshape[NCH][1024];
 
-  tree->SetBranchAddres("ev", &ev);
-  tree->SetBranchAddres("nch", &nch);
-  tree->SetBranchAddres("tetime", &tetime);
-  tree->SetBranchAddres("base", &base);
-  tree->SetBranchAddres("vcharge", &vcharge);
-  tree->SetBranchAddres("pshape", &pshape);
+  tree->SetBranchAddress("ev", &ev);
+  tree->SetBranchAddress("nch", &nch);
+  tree->SetBranchAddress("tetime", &tetime);
+  tree->SetBranchAddress("base", &base);
+  tree->SetBranchAddress("vcharge", &vcharge);
+  tree->SetBranchAddress("pshape", &pshape);
 
   long int nEntries = tree->GetEntries();
 
-  for (long int entry=0; entry<nEntries ; entry++) {
+  // for (long int entry=0; entry<nEntries ; entry++) {
 
-    tree->GetEntry(entry);
+  //   tree->GetEntry(entry);
 
-    dobule diff=0;
+  //   dobule diff=0;
 
-    for (channel=0; channel<nch; channel++) {
+  //   for (channel=0; channel<nch; channel++) {
 
-      double sum=0;
+  //     double sum=0;
       
-      for (int i=0; i<1024; i++) {
+  //     for (int i=0; i<1024; i++) {
       
-	sum+=2*pshape[channel][i];
+  // 	sum+=pshape[channel][i];
 	
-      }
+  //     }
 
-      diff=base[channel]-(sum-pshape[channel][0]-pshape[channel][1024])*CONVERSION*DT/2.; // fattore di conversione per portare in pC, DT/2 dal metodo dei trapezi
+  //     diff=base[channel]-sum*CONVERSION*DT; // fattore di conversione per portare in pC
       
+  //}
+
+  double sum=0;
+  
+  tree->GetEntry(EVENT);
+  for (int i=0; i<1024; i++) {
+      
+    sum+=pshape[CHANNEL][i];
+	
   }
+  std::cout<<"Event "<< EVENT<<" channel "<< CHANNEL << " difference " << base[CHANNEL]-sum*CONVERSION*DT << std::endl;
+
 
 }
