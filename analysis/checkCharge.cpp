@@ -57,14 +57,15 @@ int main(int argc, char* argv[]) {
 
   int nEntries = tree->GetEntries();
   float rapporto;
-
+  float vmin = 20;
 
   std::string plotsDir(Form("Istogramma_charge/"));
   system( Form("mkdir -p %s", plotsDir.c_str()) );
     
   for (int channel=0; channel<NCH; channel++) {
 
-    TH1F* hist = new TH1F("hist", "distribuzione dei rapporti integrale/vcharge", 100, -2, 2);
+    TH1F* hist_e = new TH1F("hist_e", "distribuzione dei rapporti integrale/vcharge |Vcharge| superiori a 20 pC ", 100, -2, 2);
+    TH1F* hist = new TH1F("hist", "distribuzione dei rapporti integrale/vcharge ", 100, -2, 2);
 
     for (int entry=0; entry<nEntries ; entry++) {
 
@@ -79,17 +80,26 @@ int main(int argc, char* argv[]) {
       }
 
       rapporto = sum*=DT/vcharge[channel];
-      hist -> Fill(rapporto);
 
+      if(vcharge[channel] < -vmin){
+        hist_e -> Fill(rapporto);
+      }
+      hist -> Fill(rapporto);
     }
 
 
-  TCanvas* C = new TCanvas("C","Primo Canvas",600,800); // Nome, Titolo,x,y
+  TCanvas* C = new TCanvas("C","Istogramma rapporti con carica",600,800); // Nome, Titolo,x,y
   C -> cd(); // Apre una sessione
-  hist -> Draw(); // Disegna l'istogramma
-  C -> SaveAs(Form("Istogramma%d.pdf",channel));
+  hist_e -> Draw(); // Disegna l'istogramma
+  C -> SaveAs(Form("%s/Istogramma_%d_carica.pdf", plotsDir.c_str(),channel));
 
-  delete hist;    
+  TCanvas* D = new TCanvas("C","Istogramma rapporti totale",600,800); // Nome, Titolo,x,y
+  D -> cd(); // Apre una sessione
+  hist -> Draw(); // Disegna l'istogramma
+  D -> SaveAs(Form("%s/Istogramma_%d_totale.pdf", plotsDir.c_str(),channel));
+
+  delete hist; 
+  delete hist_e;   
 
   }
 
