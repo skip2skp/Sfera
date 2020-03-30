@@ -12,12 +12,15 @@
 #define CHANNEL 10
 
 #include<iostream>
+#include<stdio.h>
 //#include<vector>
 
 #include"TFile.h"
 #include"TTree.h"
 #include"TString.h"
 #include"TH1F.h"
+#include"TCanvas.h"
+
 
 int main(int argc, char* argv[]) {
   
@@ -39,8 +42,8 @@ int main(int argc, char* argv[]) {
   }
 
   // istrogrammi
+ 
 
-  //TH1F* hist = new TH1F("hist", "distr dei rapporti integrale/vcharge", 100, 
   
   // variabili da leggere: baseline, profilo, integrale calcolato dal digitizer
 
@@ -48,20 +51,26 @@ int main(int argc, char* argv[]) {
   float base[NCH], vcharge[NCH], pshape[NCH][1024];
 
   tree->SetBranchAddress("ev", &ev);
-  tree->SetBranchAddress("nch", &nch);
   tree->SetBranchAddress("base", &base);
   tree->SetBranchAddress("vcharge", &vcharge);
   tree->SetBranchAddress("pshape", &pshape);
 
   int nEntries = tree->GetEntries();
+  float rapporto;
+
+
+  std::string plotsDir(Form("Istogramma_charge/"));
+  system( Form("mkdir -p %s", plotsDir.c_str()) );
     
-  for (int entry=0; entry<nEntries ; entry++) {
+  for (int channel=0; channel<NCH; channel++) {
 
-    tree->GetEntry(entry);
+    TH1F* hist = new TH1F("hist", "distribuzione dei rapporti integrale/vcharge", 100, -2, 2);
 
-    for (int channel=0; channel<nch; channel++) {
+    for (int entry=0; entry<nEntries ; entry++) {
+
+      tree->GetEntry(entry);
       
-      double sum=0;
+      float sum=0;
       
       for (int i=0; i<1024; i++) {
 	
@@ -69,12 +78,18 @@ int main(int argc, char* argv[]) {
 	
       }
 
-      sum*=DT;
-      
-      std::cout<<sum<<" "<<vcharge[channel]<<" "<<sum/vcharge[channel]<<std::endl;
-      
+      rapporto = sum*=DT/vcharge[channel];
+      hist -> Fill(rapporto);
+
     }
-  
+
+
+  TCanvas* C = new TCanvas("C","Primo Canvas",600,800); // Nome, Titolo,x,y
+  C -> cd(); // Apre una sessione
+  hist -> Draw(); // Disegna l'istogramma
+  C -> SaveAs(Form("Istogramma%d.pdf",channel));
+
+  delete hist;    
 
   }
 
