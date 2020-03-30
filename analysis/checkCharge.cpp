@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
   
   // variabili da leggere: baseline, profilo, integrale calcolato dal digitizer
 
-  int ev, nch;
+  int ev;
   float base[NCH], vcharge[NCH], pshape[NCH][1024];
 
   tree->SetBranchAddress("ev", &ev);
