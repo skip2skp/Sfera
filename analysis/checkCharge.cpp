@@ -8,7 +8,7 @@
 #define DT 938E-3
 #define CONVERSION 1
 
-#define EVENT 5638
+#define EVENT 5637
 #define CHANNEL 10
 
 #include<iostream>
@@ -44,49 +44,41 @@ int main(int argc, char* argv[]) {
 
   // variabili da leggere: baseline, profilo, integrale calcolato dal digitizer
 
-  long int ev;
+  int ev;
   int nch;
-  double tetime;
   double base[NCH], vcharge[NCH], pshape[NCH][1024];
 
   tree->SetBranchAddress("ev", &ev);
   tree->SetBranchAddress("nch", &nch);
-  tree->SetBranchAddress("tetime", &tetime);
   tree->SetBranchAddress("base", &base);
   tree->SetBranchAddress("vcharge", &vcharge);
   tree->SetBranchAddress("pshape", &pshape);
 
   long int nEntries = tree->GetEntries();
 
-  // for (long int entry=0; entry<nEntries ; entry++) {
+  for (long int entry=0; entry<nEntries ; entry++) {
 
-  //   tree->GetEntry(entry);
+    tree->GetEntry(entry);
+    
+    // dobule diff=0;
 
-  //   dobule diff=0;
+    for (int channel=0; channel<nch; channel++) {
 
-  //   for (channel=0; channel<nch; channel++) {
+      std::cout << "Event " << ev << " channel " << channel << "charge" << vcharge[0] <<std::endl;
 
-  //     double sum=0;
+    }
       
-  //     for (int i=0; i<1024; i++) {
+    //   double sum=0;
       
-  // 	sum+=pshape[channel][i];
+    //   for (int i=0; i<1024; i++) {
 	
-  //     }
-
-  //     diff=base[channel]-sum*CONVERSION*DT; // fattore di conversione per portare in pC
+    // 	sum+=pshape[channel][i];
+	
+    //   }
       
-  //}
-
-  double sum=0;
+    //   diff=base[channel]-sum*CONVERSION*DT; // fattore di conversione per portare in pC
+      
+    }
   
-  tree->GetEntry(EVENT);
-  for (int i=0; i<1024; i++) {
-      
-    sum+=pshape[CHANNEL][i];
-	
-  }
-  std::cout<<"Event "<< EVENT<<" channel "<< CHANNEL << " difference " << base[CHANNEL]-sum*CONVERSION*DT << std::endl;
-
 
 }
