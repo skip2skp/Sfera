@@ -5,7 +5,7 @@
 #define ERROR_NOTREE 2
 
 #define NCH 16
-#define DT 938E-3
+#define DT 938E-3 // ns
 #define CONVERSION 1
 
 #define EVENT 5637
@@ -17,8 +17,7 @@
 #include"TFile.h"
 #include"TTree.h"
 #include"TString.h"
-#include"TRandom3.h"
-//#include"TGraph.h"
+#include"TH1F.h"
 
 int main(int argc, char* argv[]) {
   
@@ -39,14 +38,14 @@ int main(int argc, char* argv[]) {
     exit(ERROR_NOTREE);
   }
 
-  //std::vector<double> diffs;
-  //std::vector<int> channels;
+  // istrogrammi
 
+  //TH1F* hist = new TH1F("hist", "distr dei rapporti integrale/vcharge", 100, 
+  
   // variabili da leggere: baseline, profilo, integrale calcolato dal digitizer
 
-  int ev;
-  int nch;
-  double base[NCH], vcharge[NCH], pshape[NCH][1024];
+  int ev, nch;
+  float base[NCH], vcharge[NCH], pshape[NCH][1024];
 
   tree->SetBranchAddress("ev", &ev);
   tree->SetBranchAddress("nch", &nch);
@@ -54,13 +53,11 @@ int main(int argc, char* argv[]) {
   tree->SetBranchAddress("vcharge", &vcharge);
   tree->SetBranchAddress("pshape", &pshape);
 
-  long int nEntries = tree->GetEntries();
-
-  for (long int entry=0; entry<nEntries ; entry++) {
+  int nEntries = tree->GetEntries();
+    
+  for (int entry=0; entry<nEntries ; entry++) {
 
     tree->GetEntry(entry);
-    
-    double diff=0;
 
     for (int channel=0; channel<nch; channel++) {
       
@@ -68,15 +65,18 @@ int main(int argc, char* argv[]) {
       
       for (int i=0; i<1024; i++) {
 	
-    	sum+=pshape[channel][i];
+    	sum+=pshape[channel][i]-pshape[channel][0];
 	
       }
+
+      sum*=DT;
       
-      diff=base[channel]-sum*CONVERSION*DT; // fattore di conversione per portare in pC
+      std::cout<<sum<<" "<<vcharge[channel]<<" "<<sum/vcharge[channel]<<std::endl;
       
     }
   
 
   }
+
 
 }
