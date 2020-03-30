@@ -6,6 +6,14 @@
 #include <string>
 #include <stdlib.h>
 
+bool replace(std::string& str, const std::string& from, const std::string& to) {
+    size_t start_pos = str.find(from);
+    if(start_pos == std::string::npos)
+        return false;
+    str.replace(start_pos, from.length(), to);
+    return true;
+}
+
 int main( int argc, char* argv[] ) {
 
   if( argc != 2 ) {
@@ -64,6 +72,7 @@ int main( int argc, char* argv[] ) {
   std::string line;
   bool wasReadingEvent = false;
   bool readyForPulseShape = false;
+
   int ch = -1;
 
 
@@ -78,6 +87,11 @@ int main( int argc, char* argv[] ) {
       size_t pos = 0;
       std::vector<std::string> words;
       std::string word;
+
+      while((pos = line.find("  ")) != std::string::npos) {
+      	replace(line,"  ", delimiter);
+      }
+      
       while ((pos = line.find(delimiter)) != std::string::npos) {
         word = line.substr(0, pos);
         line.erase(0, pos + delimiter.length());
@@ -143,4 +157,5 @@ int main( int argc, char* argv[] ) {
   return 0;
 
 }
+
 
