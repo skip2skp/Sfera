@@ -6,7 +6,6 @@
 
 #define NCH 16
 #define DT 938E-3 // ns
-#define CONVERSION 1
 
 #include<iostream>
 #include<stdio.h>
@@ -16,6 +15,7 @@
 #include"TTree.h"
 #include"TString.h"
 #include"TH1F.h"
+#include"TH1.h"
 #include"TCanvas.h"
 #include"TGraphErrors.h"
 
@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
 
   int nEntries = tree->GetEntries();
   float rapporto;
-  float vmin = 20;
+  float vmin = 40;
 
   std::string plotsDir(Form("plots_checkcharge/"));
   system( Form("mkdir -p %s", plotsDir.c_str()) );
@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
     
   for (int channel=0; channel<NCH; channel++) {
 
-    TH1F* hist = new TH1F("hist", "distribuzione dei rapporti integrale/vcharge ", 100, -2, 2);
+    TH1F* hist = new TH1F("hist", "distribuzione dei rapporti integrale/vcharge ", 100, -0.05, 0.5);
 
     for (int entry=0; entry<nEntries ; entry++) {
 
@@ -83,37 +83,46 @@ int main(int argc, char* argv[]) {
 	
       }
 
-      rapporto = sum*=DT/vcharge[channel];
-
+      rapporto = sum*DT/vcharge[channel];
+      //if(rapporto>0.2 && vcharge[channel] < -vmin){std::cout<<channel<<" "<<entry<<" "<< vcharge[channel]<<" "<< sum*DT<<" "<<rapporto<<std::endl;}
+      //if(channel==9 && vcharge[channel] < -vmin){std::cout<<channel<<" "<<entry<<" "<< vcharge[channel]<<" "<< sum*DT<<" "<<rapporto<<std::endl;}
       if(vcharge[channel] < -vmin) hist->Fill(rapporto);
       
     }
 
+  	TCanvas* c1 = new TCanvas("c1","Istogramma Rapporti della Carica Misurata vs. Riportata",600,800); // Nome, Titolo,x,y
+  	c1->cd();
+  	hist->SetTitle("Istogramma Rapporti della Carica Misurata vs. Riportata");
+ 	hist->GetXaxis()->SetTitle("Rapporto della Carica Misurata vs. Riportata");
+ 	hist->GetYaxis()->SetTitle("Numero Eventi");
 
-  TCanvas* c1 = new TCanvas("c1","Istogramma rapporti con carica",600,800); // Nome, Titolo,x,y
-  c1->cd(); // Apre una sessione
-  hist->Draw(); // Disegna l'istogramma
-  c1->SaveAs(Form("%s/hisd_charge_%d.pdf", plotsDir.c_str(),channel));
+ // Apre una sessione
+  	hist->Draw(); // Disegna l'istogramma
+  	c1->SaveAs(Form("%s/hisd_charge_%d.pdf", plotsDir.c_str(),channel));
+ 
 
-  x[channel]=channel;
-  charges[channel]=hist->GetMean();
-  err_charges[channel]=hist->GetMeanError();
+  	x[channel]=channel+1;
+  	charges[channel]=hist->GetMean();
+  	err_charges[channel]=hist->GetStdDev();
 
-  delete hist, c1;
+
+  delete hist;
+  // delete c1;
+
 
   }
-
-  TCanvas* c2 = new TCanvas("c2", "Grafico Calibrazione");
+ 
+  TCanvas* c2 = new TCanvas("c2", "Confronto Medie e Std Dev di R = Integrale/Carica ");
   c2->cd();
   TGraphErrors* gr=new TGraphErrors(NCH, x, charges, err_x, err_charges);
-  gr->SetTitle("Grafico Calibrazione");
+  gr->SetTitle("Confronto Medie e Std Dev di R = Integrale / Charge; Canale ;Media di R = Integrale/Carica");
   gr->SetMarkerStyle(21);
   gr->SetMarkerSize(1.0);
   gr->Draw("AP");
-  c2->SaveAs(Form("%s/calibrazione.pdf", plotsDir.c_str()));
+  c2->SaveAs(Form("%s/confrondo_medie_e_DevStandard.pdf", plotsDir.c_str()));
   
-  delete gr, c2;
-	     
-
+  delete gr;
+ 
+  return 0;
 
 }
