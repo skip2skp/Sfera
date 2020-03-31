@@ -65,6 +65,7 @@ int main(int argc, char* argv[]) {
   for (int channel=0; channel<NCH; channel++) {
 
     TH1F* hist_e = new TH1F("hist_e", "distribuzione dei rapporti integrale/vcharge |Vcharge| superiori a 20 pC ", 100, -2, 2);
+    TH1F* hist_e_tight = new TH1F("hist_e", "distribuzione dei rapporti integrale/vcharge |Vcharge| superiori a 20 pC ", 100, -0.01, 0.1);
     TH1F* hist = new TH1F("hist", "distribuzione dei rapporti integrale/vcharge ", 100, -2, 2);
 
     for (int entry=0; entry<nEntries ; entry++) {
@@ -83,6 +84,7 @@ int main(int argc, char* argv[]) {
 
       if(vcharge[channel] < -vmin){
         hist_e -> Fill(rapporto);
+        hist_e_tight -> Fill(rapporto);
       }
       hist -> Fill(rapporto);
     }
@@ -97,6 +99,11 @@ int main(int argc, char* argv[]) {
   D -> cd(); // Apre una sessione
   hist -> Draw(); // Disegna l'istogramma
   D -> SaveAs(Form("%s/Istogramma_%d_totale.pdf", plotsDir.c_str(),channel));
+
+  TCanvas* E = new TCanvas("C","Istogramma rapporti con carica Stretto",600,800); // Nome, Titolo,x,y
+  E -> cd(); // Apre una sessione
+  hist_e_tight -> Draw(); // Disegna l'istogramma
+  E -> SaveAs(Form("%s/Istogramma_%d_carica_tight.pdf", plotsDir.c_str(),channel));
 
   delete hist; 
   delete hist_e;   
