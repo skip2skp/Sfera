@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
   float rapporto;
   float vmin = 20;
 
-  std::string plotsDir(Form("Plot/"));
+  std::string plotsDir(Form("plots_checkcharge/"));
   system( Form("mkdir -p %s", plotsDir.c_str()) );
 
   // per grafico calibrazione
