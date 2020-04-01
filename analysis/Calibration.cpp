@@ -1,6 +1,3 @@
-// Palmisano 29/03/2020
-// Programma per integrare il profilo di impulso e confrontarlo con risultato ritornato dal digitizer.
-
 #define ERROR_USAGE 1
 #define ERROR_NOTREE 2
 
@@ -46,11 +43,7 @@ int main(int argc, char* argv[]) {
     exit(ERROR_NOTREE);
   }
 
-  // istrogrammi
- 
-
-  
-  // variabili da leggere: baseline, profilo, integrale calcolato dal digitizer
+  // variabili da leggere: numero evento, baseline, integrale calcolato dal digitizer
 
   int ev;
   float base[NCH], vcharge[NCH];
@@ -60,12 +53,16 @@ int main(int argc, char* argv[]) {
   tree->SetBranchAddress("vcharge", &vcharge);
 
   int nEntries = tree->GetEntries();
-  int flag_fit = 1;
+  bool doFit = 1;
 
 
-  std::string plotsDir(Form("Istogramma_spettro_Cesio/"));
+  // Cartella per i grafici
+  
+  std::string plotsDir(Form("hist_spettro/"));
   system( Form("mkdir -p %s", plotsDir.c_str()) );
 
+  // Cutoffs per isolare il picco fotoelettrico
+  
   double xmin[NCH] = {950, 650, 650, 750, 850, 800, 700, 750, 700, 700, 900, 950, 700, 800, 700, 700};
   double medie[NCH] ={0};
   double k[NCH]= {0};
@@ -80,6 +77,7 @@ int main(int argc, char* argv[]) {
         TH1F* hist = new TH1F("hist",Form("Spettro Cesio [Ch: %d]", channel), NBIN, NMIN, NMAX);
 
         for (int entry=0; entry<nEntries ; entry++) {
+	  
             tree->GetEntry(entry);
             
             if(-vcharge[channel]>CMIN){
@@ -94,7 +92,8 @@ int main(int argc, char* argv[]) {
 
         medie[channel] = r->Parameter(1);
         
-
+	// costante di conversione
+	
         k[channel]= MEDIA/medie[channel];
 
         TH1F* hist_scaled = new TH1F("hist_scaled",Form("Spettro Cesio calibrato [Ch: %d]", channel), NBIN, NMIN*k[channel], NMAX*k[channel]);
@@ -111,14 +110,18 @@ int main(int argc, char* argv[]) {
         TFitResultPtr p = hist_scaled->Fit("f2", "SRQ");
 
         TCanvas* E = new TCanvas("hist",Form("Spettro Cesio [Ch: %d]", channel),600,800); // Nome, Titolo,x,y
-        hist->SetTitle(Form("Spettro Cesio [Ch: %d];Energia (MeV);Numero Eventi",channel));
+        hist->SetTitle(Form("Spettro Cesio [Ch: %d];Carica (pC);Numero Eventi",channel));
         E -> cd(); // Apre una sessione
+	hist->GetXaxis()->SetTitle(Form("Carica (pC) canale %d",channel));
+	hist->GetYaxis()->SetTitle("Count");
         hist -> Draw(); // Disegna l'istogramma
         E -> SaveAs(Form("%s/Istogramma_Spettro_Cesio_%d.pdf", plotsDir.c_str(),channel));
 
         TCanvas* F = new TCanvas("hist_scaled",Form("Spettro Cesio Scalato [Ch: %d]", channel),600,800); // Nome, Titolo,x,y
         hist_scaled->SetTitle(Form("Spettro Cesio Scalato [Ch: %d];Energia (MeV);Numero Eventi",channel));
         F -> cd(); // Apre una sessione
+	hist_scaled->GetXaxis()->SetTitle(Form("Energia (MeV) canale %d", channel));
+	hist_scaled->GetYaxis()->SetTitle("Count");
         hist_scaled -> Draw(); // Disegna l'istogramma
         F -> SaveAs(Form("%s/Istogramma_Spettro_Cesio_%d_Calibrato.pdf", plotsDir.c_str(),channel));
 /**
