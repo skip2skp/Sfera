@@ -23,14 +23,17 @@ checkPulseShape: checkPulseShape.cpp
 makeSpectrum: makeSpectrum.cpp
 	$(CC) -Wall $(INCLUDES) -o makeSpectrum makeSpectrum.cpp $(ROOTFLAG) $(EXTRALIBS)
 
-make checkCharge: checkCharge.cpp
+checkCharge: checkCharge.cpp
 	$(CC) -Wall $(INCLUDES) -o checkCharge checkCharge.cpp $(ROOTFLAG) $(EXTRALIBS)
 
+calibrazione_energia: calibrazione_energia.cpp
+	$(CC) -Wall $(INCLUDES) -o calibrazione_energia calibrazione_energia.cpp $(ROOTFLAG) $(EXTRALIBS)
 
-all: asciiToTree checkPulseShape measToTree makeSpectrum checkCharge
+
+all: asciiToTree checkPulseShape measToTree makeSpectrum checkCharge calibrazione_energia
 
 
 clean:
-	rm asciiToTree checkPulseShape measToTree makeSpectrum checkCharge
+	rm asciiToTree checkPulseShape measToTree makeSpectrum checkCharge calibrazione_energia
 
 
