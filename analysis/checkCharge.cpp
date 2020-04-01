@@ -70,6 +70,8 @@ int main(int argc, char* argv[]) {
   for (int channel=0; channel<NCH; channel++) {
 
     TH1F* hist = new TH1F("hist", "distribuzione dei rapporti integrale/vcharge ", 100, -0.05, 0.5);
+    TH1F* charge = new TH1F("charge", "distribuzione delle cariche ", 1000, -1500, 100);
+
 
     for (int entry=0; entry<nEntries ; entry++) {
 
@@ -86,19 +88,33 @@ int main(int argc, char* argv[]) {
       rapporto = sum*DT/vcharge[channel];
       //if(rapporto>0.2 && vcharge[channel] < -vmin){std::cout<<channel<<" "<<entry<<" "<< vcharge[channel]<<" "<< sum*DT<<" "<<rapporto<<std::endl;}
       //if(channel==9 && vcharge[channel] < -vmin){std::cout<<channel<<" "<<entry<<" "<< vcharge[channel]<<" "<< sum*DT<<" "<<rapporto<<std::endl;}
-      if(vcharge[channel] < -vmin) hist->Fill(rapporto);
       
+      charge->Fill(vcharge[channel]);
+
+      if(vcharge[channel] < -vmin){
+        hist->Fill(rapporto);
+      }
+
     }
 
   	TCanvas* c1 = new TCanvas("c1","Istogramma Rapporti della Carica Misurata vs. Riportata",600,800); // Nome, Titolo,x,y
   	c1->cd();
   	hist->SetTitle("Istogramma Rapporti della Carica Misurata vs. Riportata");
- 	hist->GetXaxis()->SetTitle("Rapporto della Carica Misurata vs. Riportata");
- 	hist->GetYaxis()->SetTitle("Numero Eventi");
+ 	  hist->GetXaxis()->SetTitle("Rapporto della Carica Misurata vs. Riportata");
+ 	  hist->GetYaxis()->SetTitle("Numero Eventi");
+
+    TCanvas* c3 = new TCanvas("c2","Istogramma della",600,800); // Nome, Titolo,x,y
+    c3->cd();
+    charge->SetTitle("Istogramma della Carica");
+    charge->GetXaxis()->SetTitle("Carica");
+    charge->GetYaxis()->SetTitle("Numero Eventi");
 
  // Apre una sessione
   	hist->Draw(); // Disegna l'istogramma
-  	c1->SaveAs(Form("%s/hisd_charge_%d.pdf", plotsDir.c_str(),channel));
+  	c1->SaveAs(Form("%s/hist_charge_%d_ratio.pdf", plotsDir.c_str(),channel));
+
+    charge->Draw();
+    c3->SaveAs(Form("%s/his_charge_%d.pdf", plotsDir.c_str(),channel));
  
 
   	x[channel]=channel+1;
@@ -107,7 +123,8 @@ int main(int argc, char* argv[]) {
 
 
   delete hist;
-  // delete c1;
+  delete charge;
+  delete c1, c3;
 
 
   }
