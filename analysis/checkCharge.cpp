@@ -22,7 +22,7 @@
 
 int main(int argc, char* argv[]) {
 
-  // Check ussage
+  // Check usage
   
   if (argc!=2) {
     std::cout<<"Usage: "<<argv[0]<<" filename.root. \n Exiting."<<std::endl;
@@ -67,15 +67,15 @@ int main(int argc, char* argv[]) {
   Double_t charge_axis[NCH];
   Double_t err_charge[NCH];
   Double_t *err_channel=0; // Dummy
-    
+  
   for (int channel=0; channel<NCH; channel++) {
-
+    
     TH1F* hist = new TH1F("hist", "distribuzione dei rapporti integrale/vcharge ", 100, -0.05, 0.5);
     TH1F* charge = new TH1F("charge", "distribuzione delle cariche ", 1000, -1500, 100);
-
+    
 
     for (int entry=0; entry<nEntries ; entry++) {
-
+      
       tree->GetEntry(entry);
       
       float sum=0;
@@ -85,68 +85,63 @@ int main(int argc, char* argv[]) {
     	sum+=pshape[channel][i]-pshape[channel][0]; //sottrae valore base. Si può far meglio, facendo una media dei primi valori
 	
       }
-<<<<<<< HEAD
-
-      rapporto = sum*DT/vcharge[channel];
+      
+      //rapporto = sum*DT/vcharge[channel];
       //if(rapporto>0.2 && vcharge[channel] < -vmin){std::cout<<channel<<" "<<entry<<" "<< vcharge[channel]<<" "<< sum*DT<<" "<<rapporto<<std::endl;}
       //if(channel==9 && vcharge[channel] < -vmin){std::cout<<channel<<" "<<entry<<" "<< vcharge[channel]<<" "<< sum*DT<<" "<<rapporto<<std::endl;}
-=======
+      
       
       if(!signalOnly) hist->Fill(sum*DT/vcharge[channel]); // Se signalOnly=0 salva tutti gli eventi
       else if(vcharge[channel] < -min_charge) hist->Fill(sum*DT/vcharge[channel]); // Altrimenti solo quelli con |carica|>min_charge
->>>>>>> 585cd2c8921fe220b1520929099895b789cf28fa
       
       charge->Fill(vcharge[channel]);
-
-      if(vcharge[channel] < -vmin){
-        hist->Fill(rapporto);
+      
+      if(vcharge[channel] < -min_charge){
+        hist->Fill(sum*DT/vcharge[channel]);
       }
-
+      
     }
-
-<<<<<<< HEAD
-  	TCanvas* c1 = new TCanvas("c1","Istogramma Rapporti della Carica Misurata vs. Riportata",600,800); // Nome, Titolo,x,y
-  	c1->cd();
-  	hist->SetTitle("Istogramma Rapporti della Carica Misurata vs. Riportata");
- 	  hist->GetXaxis()->SetTitle("Rapporto della Carica Misurata vs. Riportata");
- 	  hist->GetYaxis()->SetTitle("Numero Eventi");
-
-    TCanvas* c3 = new TCanvas("c2","Istogramma della",600,800); // Nome, Titolo,x,y
-    c3->cd();
-    charge->SetTitle("Istogramma della Carica");
-    charge->GetXaxis()->SetTitle("Carica");
-    charge->GetYaxis()->SetTitle("Numero Eventi");
-
- // Apre una sessione
-  	hist->Draw(); // Disegna l'istogramma
-  	c1->SaveAs(Form("%s/hist_charge_%d_ratio.pdf", plotsDir.c_str(),channel));
-
-    charge->Draw();
-    c3->SaveAs(Form("%s/his_charge_%d.pdf", plotsDir.c_str(),channel));
- 
-
-  	x[channel]=channel+1;
-  	charges[channel]=hist->GetMean();
-  	err_charges[channel]=hist->GetStdDev();
-
-
-  delete hist;
-  delete charge;
-  delete c1, c3;
-
-=======
-    // per gli istogrammi
     
     TCanvas* c1 = new TCanvas("c1","Istogramma Rapporti della Carica Misurata vs. Riportata",600,800); // Nome, Titolo,x,y
     c1->cd();
     hist->SetTitle("Istogramma Rapporti della Carica Misurata vs. Riportata");
     hist->GetXaxis()->SetTitle("Rapporto della Carica Misurata vs. Riportata");
     hist->GetYaxis()->SetTitle("Numero Eventi");
-    hist->Draw();
-    c1->SaveAs(Form("%s/hist_charge_%d.pdf", plotsDir.c_str(),channel));
     
->>>>>>> 585cd2c8921fe220b1520929099895b789cf28fa
+    TCanvas* c3 = new TCanvas("c2","Istogramma della",600,800); // Nome, Titolo,x,y
+    c3->cd();
+    charge->SetTitle("Istogramma della Carica");
+    charge->GetXaxis()->SetTitle("Carica");
+    charge->GetYaxis()->SetTitle("Numero Eventi");
 
+    // Apre una sessione
+    hist->Draw(); // Disegna l'istogramma
+    c1->SaveAs(Form("%s/hist_charge_%d_ratio.pdf", plotsDir.c_str(),channel));
+    
+    charge->Draw();
+    c3->SaveAs(Form("%s/his_charge_%d.pdf", plotsDir.c_str(),channel));
+    
+    
+    channel_axis[channel]=channel+1;
+    charge_axis[channel]=hist->GetMean();
+    err_charge[channel]=hist->GetStdDev();
+    
+    
+    delete hist;
+    delete charge;
+    //delete c1, c3;
+    
+    
+    // per gli istogrammi
+    
+    TCanvas* c2 = new TCanvas("c1","Istogramma Rapporti della Carica Misurata vs. Riportata",600,800); // Nome, Titolo,x,y
+    c2->cd();
+    hist->SetTitle("Istogramma Rapporti della Carica Misurata vs. Riportata");
+    hist->GetXaxis()->SetTitle("Rapporto della Carica Misurata vs. Riportata");
+    hist->GetYaxis()->SetTitle("Numero Eventi");
+    hist->Draw();
+    c2->SaveAs(Form("%s/hist_charge_%d.pdf", plotsDir.c_str(),channel));
+    
     // salva variabili per grafico somma/carica vs canale
     
     channel_axis[channel]=channel+1; // grazie:)
