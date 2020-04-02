@@ -27,7 +27,6 @@
 #include"TCanvas.h"
 #include"TGraphErrors.h"
 #include"THistPainter.h"
-#include <TColor.h>
 
 
 
