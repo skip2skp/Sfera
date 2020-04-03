@@ -13,6 +13,7 @@
 #define CMIN 30
 #define NMIN 0
 #define NMAX 1200
+#define FIT_START 350
 #define NBIN 100
 #define MEDIA 661.7
 
@@ -36,18 +37,24 @@ Double_t fermiDirac(Double_t *x, Double_t *par) {
 
 	return par[0]/(1+exp((x[0]-par[1])*par[2])); // NB par[0] = ampiezza, par[1]="potenziale chimico", par[2]=1/"temperatura"
 
-      }
+}
 
-Double_t gaussian(Double_t *x, Double_t *par) {
+// Double_t gaussian(Double_t *x, Double_t *par) {
 
-  return par[0]*exp(-(x[0]-par[1])*(x[0]-par[1])/(2*par[2])); // NB par[0]=ampiezza, par[1]=media, par[2]= varianza della distribuzione, non la sigma
+//   return par[0]*exp(-(x[0]-par[1])*(x[0]-par[1])/(2*par[2])); // NB par[0]=ampiezza, par[1]=media, par[2]= varianza della distribuzione, non la sigma
+
+// }
+
+Double_t background(Double_t *x, Double_t *par) {
+
+  return par[0] + x[0]*par[1] + x[0]*x[0]*par[2];// + x[0]*x[0]*x[0]*par[3];
+  //  return par[0]*exp(par[1]*x[0])
   
 }
 
-Double_t fitFunc(Double_t *x, Double_t *par) {
-  
-  return fermiDirac(x, &par[3]);//+gaussian(x, par);
-  
+Double_t fitFunc(Double_t *x, Double_t *par) { 
+  return fermiDirac(x, &par[3]) + fermiDirac(x, &par[6]) + par[0]*TMath::Gaus(x[0], par[1], par[2]) + background(x, &par[9]);
+
 }
 
 int main(int argc, char* argv[]) {
@@ -108,34 +115,37 @@ int main(int argc, char* argv[]) {
   //TH1F* hist3 = new TH1F("hist3","Spettro Cesio ch 3 ", NBIN, NMIN, NMAX);
 
 /***********************************BEGIN FIT AND K CALC*********************************************************************************/
-
+  
   for (int channel=0; channel<NCH; channel++) {
         
       TH1F* spettro = new TH1F("spettro",Form("Spettro Cesio [Ch: %d]", channel), NBIN, NMIN, NMAX);
 
 
       for (int entry=0; entry<nEntries ; entry++) {
-          tree->GetEntry(entry); 	// prendi l'evento i-esimo 
-            
-          if(-vcharge[channel]>CMIN){
-              spettro -> Fill(-vcharge[channel]); //riempi l'isto
-          }
-
+        tree->GetEntry(entry); 	// prendi l'evento i-esimo 
+        
+        if(-vcharge[channel]>CMIN){
+          spettro -> Fill(-vcharge[channel]); //riempi l'isto
+        }
+        
       }
-      
 
-      TF1* rootfitFunc = new TF1("rootfitFunc", fitFunc, CMIN, NMAX, 6);
+      TF1 *fitgaus1 = new TF1("fitgaus1", "gaus", xmin[channel], NMAX); //fit gaussiana 1
+
+      TFitResultPtr gaussian_fit = spettro->Fit("fitgaus1", "SRQ");
+
+      TF1* rootfitFunc = new TF1("rootfitFunc", fitFunc, FIT_START, NMAX, 13);
       //      TF1* rootfitFunc = new TF1("fitFuncgaus", fitFunc, CMIN, NMAX, 6);
 
-      rootfitFunc->SetParLimits(0,0,2500);
-      rootfitFunc->SetParLimits(1,500,1000);
-      rootfitFunc->SetParLimits(2,100,500);
-      rootfitFunc->SetParLimits(3,0, 2500);
-      rootfitFunc->SetParLimits(4, 0, 500);
+      rootfitFunc->SetParameter(0,2000);
+      rootfitFunc->SetParameter(1,960);
+      rootfitFunc->SetParameter(2,38);
+      rootfitFunc->SetParameter(4,100);
+      rootfitFunc->SetParLimits(3,0,2500);
       //rootfitFunc->SetParLimits(5,);
       
-      // TF1 *fitgaus1 = new TF1("fitgaus1", "gaus", xmin[channel], NMAX); //fit gaussiana 1
-      TFitResultPtr fit_result_1=spettro->Fit("rootfitFunc", "SPQR");
+      
+      TFitResultPtr fit_result_1=spettro->Fit("rootfitFunc", "SQR");
 
       medie[channel] = fit_result_1->Parameter(1);
       errore_medie[channel] = fit_result_1->ParError(1);
@@ -145,17 +155,15 @@ int main(int argc, char* argv[]) {
       kap[channel]= MEDIA/medie[channel];
       k_media += kap[channel];
 
-      TH1F* spettro_calib = new TH1F("spettro_calib",Form("Spettro Cesio calibrato [Ch: %d]", channel), NBIN, NMIN*kap[channel], NMAX*kap[channel]);
+      // TH1F* spettro_calib = new TH1F("spettro_calib",Form("Spettro Cesio calibrato [Ch: %d]", channel), NBIN, NMIN*kap[channel], NMAX*kap[channel]);
       
-      for (int entry=0; entry<nEntries ; entry++) {
-	tree->GetEntry(entry);
-	if(-vcharge[channel]>CMIN){
-	  spettro_calib -> Fill(-vcharge[channel]*kap[channel]);
-	}
-      }
-      
-      
-      //TF1 *fitgaus2 = new TF1("fitgaus2", "gaus", kap[channel]*xmin[channel], NMAX);  //fit gaussiana 2
+      // for (int entry=0; entry<nEntries ; entry++) {
+      //   tree->GetEntry(entry);
+      //   if(-vcharge[channel]>CMIN){
+      //     spettro_calib -> Fill(-vcharge[channel]*kap[channel]);
+      //   }
+      // }
+        //TF1 *fitgaus2 = new TF1("fitgaus2", "gaus", kap[channel]*xmin[channel], NMAX);  //fit gaussiana 2
       //TFitResultPtr fit_result_2 = spettro_calib->Fit("fitgaus2", "SRQ");
       
       //Stampiamo  tutto
@@ -166,17 +174,17 @@ int main(int argc, char* argv[]) {
       plot_spettro -> SaveAs(Form("%s/Ist_Spettro_Cs_%d.pdf", plotsDir1.c_str(),channel));
       
       
-      TCanvas* plot_spettro_calib = new TCanvas("spettro_calib",Form("Spettro Cesio scalato [Ch: %d]", channel),1920,1080); 
-      spettro_calib->SetTitle(Form("Spettro Cesio Scalato [Ch: %d];Energia (MeV);Numero Eventi",channel));
-      plot_spettro_calib -> cd(); // Apre una sessione
-      spettro_calib -> Draw(); // Disegna l'istogramma
-      plot_spettro_calib -> SaveAs(Form("%s/Ist_Spettro_Cs_%d_Calib.pdf", plotsDir2.c_str(),channel));
+      // TCanvas* plot_spettro_calib = new TCanvas("spettro_calib",Form("Spettro Cesio scalato [Ch: %d]", channel),1920,1080); 
+      // spettro_calib->SetTitle(Form("Spettro Cesio Scalato [Ch: %d];Energia (MeV);Numero Eventi",channel));
+      // plot_spettro_calib -> cd(); // Apre una sessione
+      // spettro_calib -> Draw(); // Disegna l'istogramma
+      // plot_spettro_calib -> SaveAs(Form("%s/Ist_Spettro_Cs_%d_Calib.pdf", plotsDir2.c_str(),channel));
       
       
       
       delete spettro;
-      delete spettro_calib;
-      delete plot_spettro_calib;
+      //delete spettro_calib;
+      //delete plot_spettro_calib;
       delete plot_spettro;
       delete rootfitFunc;
       //delete fitgaus1;
