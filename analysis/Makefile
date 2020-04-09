@@ -29,11 +29,13 @@ checkCharge: checkCharge.cpp
 calibrazione_energia: calibrazione_energia.cpp
 	$(CC) -Wall $(INCLUDES) -o calibrazione_energia calibrazione_energia.cpp $(ROOTFLAG) $(EXTRALIBS)
 
+fitcesio: fitcesio.cpp
+	$(CC) -Wall $(INCLUDES) -o fitcesio fitcesio.cpp $(ROOTFLAG) $(EXTRALIBS)
 
-all: asciiToTree checkPulseShape measToTree makeSpectrum checkCharge calibrazione_energia
+all: asciiToTree checkPulseShape measToTree makeSpectrum checkCharge fitcesio
 
 
 clean:
-	rm asciiToTree checkPulseShape measToTree makeSpectrum checkCharge calibrazione_energia
+	rm asciiToTree checkPulseShape measToTree makeSpectrum checkCharge fitcesio
 
 
