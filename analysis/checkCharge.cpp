@@ -68,45 +68,74 @@ int main(int argc, char* argv[]) {
 	Double_t err_charges[NCH];
 	Double_t *err_x=0;
 
-	TH1F* diffbaseline = new TH1F("diffbaseline", "differenza baseline nostra e sua ", 100, -0.01, 0.01);
+	TH1F* diffbaseline = new TH1F("diffbaseline", "correzione all'integrale per calcolo baseline ", 100, -0.1, 0.1);
 
 
 	for (int channel=0; channel<NCH; channel++) {
 
-		TH1F* hist = new TH1F("hist", "distribuzione dei rapporti integrale/vcharge ", 100, -2, 2);
-		double basenostra =0; 
-		for (int entry=0; entry<nEntries ; entry++) {
-			tree->GetEntry(entry);
-			float sum=0;
+    TH1F* others = new TH1F("others", Form("distr. dei rapporti integrale/vcharge per canali =/=%d",channel), 100, 0.035, 0.065);
+    TH1F* hist = new TH1F("hist", Form("distribuzione dei rapporti integrale/vcharge canale %d ", channel), 100, 0.035, 0.065);
 
-			for(int i=0; i<BMAX; i++){
-				basenostra+=pshape[channel][i];
-			}
-			
-			basenostra/=BMAX;
-			diffbaseline->Fill(base[channel]-basenostra);
+    for (int j=0; j<NCH; j++) {
 
-			for (int i=BMAX; i<1024; i++) {
-				sum+=pshape[channel][i]-basenostra;
-			}
-
-			rapporto = sum*=DT/vcharge[channel];
-
-			if(vcharge[channel] < -vmin) hist->Fill(rapporto);
-
+      double basenostra =0; 
+      for (int entry=0; entry<nEntries ; entry++) {
+        tree->GetEntry(entry);
+        float sum=0;
+        
+        for(int i=0; i<BMAX; i++){
+          basenostra+=pshape[channel][i];
+        }
+        
+        basenostra/=BMAX;
+        //diffbaseline->Fill(basenostra-base[channel]);
+        
+        for (int i=BMAX; i<1024; i++) {
+          sum+=pshape[channel][i]-base[channel];
+        }
+        
+        rapporto = sum*DT/vcharge[channel];
+        
+        if(vcharge[channel] < -vmin) {
+          if(j==channel) hist->Fill(rapporto);
+          else others->Fill(rapporto);
+          diffbaseline->Fill((basenostra-base[channel])*(1024)/(sum*DT));
+          
+        }
+        
+      }
 		}
 
+    //    Double_t norm = hist->GetEntries
 
-	/*  TCanvas* c1 = new TCanvas("c1","Istogramma rapporti con carica",600,800); // Nome, Titolo,x,y
+    Double_t norm=hist->GetEntries();
+
+    hist->Scale(1/norm);
+
+    norm=others->GetEntries();
+
+    others->Scale(1/norm);
+
+    TCanvas* c1 = new TCanvas("c1",Form("Istogramma rapporti con carica canale %d vs altri", channel),600,800); // Nome, Titolo,x,y
   	c1->cd(); // Apre una sessione
+    //c1->SetLogy();
+    //hist->SetMarkerStyle(21);
+    //others->SetMarkerStyle(22);
+    //hist->SetFillColor("");
+    //others->SetFillColor("kblue");
   	hist->Draw(); // Disegna l'istogramma
-  	c1->SaveAs(Form("%s/hisd_charge_%d.pdf", plotsDir.c_str(),channel));*/
+    others->Draw("SAME");
+    c1->Update();
+  	c1->SaveAs(Form("%s/hist_charge_%d.pdf", plotsDir.c_str(),channel));
+
+
 
 		x[channel]=channel;
 		charges[channel]=hist->GetMean();
 		err_charges[channel]=hist->GetStdDev();
 
 		delete hist;
+    delete others;
 		// delete c1;
 
 	}
