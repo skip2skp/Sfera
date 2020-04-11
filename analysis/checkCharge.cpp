@@ -1,4 +1,3 @@
-// Palmisano 29/03/2020
 // Programma per integrare il profilo di impulso e confrontarlo con risultato ritornato dal digitizer.
 
 #define ERROR_USAGE 1
@@ -7,6 +6,8 @@
 #define NCH 16
 #define DT 938E-3 // ns
 #define BMAX 20
+#define vmin 50
+
 
 #include<iostream>
 #include<stdio.h>
@@ -16,10 +17,12 @@
 #include"TTree.h"
 #include"TString.h"
 #include"TH1F.h"
+#include"TF1.h"
 #include"TCanvas.h"
 #include"TGraphErrors.h"
 #include"TLatex.h"
 #include"TAttLine.h"
+#include"TMultiGraph.h"
 
 
 int main(int argc, char* argv[]) {
@@ -41,11 +44,14 @@ int main(int argc, char* argv[]) {
 		exit(ERROR_NOTREE);
 	}
 
-  // istrogrammi
+
+	//------------------------------------------------- PARTE media sui singoli canali -----------------------------------------
+
+  	// istrogrammi
 
 
 
-  // variabili da leggere: numero evento, baseline, profilo, integrale calcolato dal digitizer
+  	// variabili da leggere: numero evento, baseline, profilo, integrale calcolato dal digitizer
 
 	int ev;
 	float base[NCH], vcharge[NCH], pshape[NCH][1024];
@@ -57,174 +63,198 @@ int main(int argc, char* argv[]) {
 
 	int nEntries = tree->GetEntries();
 	float rapporto;
-	float vmin = 50;
 
 	std::string plotsDir(Form("plots_checkCharge_sodio/"));
 	system( Form("mkdir -p %s", plotsDir.c_str()) );
 
   // per grafico calibrazione
 
-	Double_t x[NCH];
-	Double_t charges[NCH];
-	Double_t err_charges[NCH];
+	Double_t x[NCH]={0.};
+	Double_t charges[NCH]={0.};
+	Double_t err_charges[NCH]={0.};
 	Double_t *err_x=0;
+	Double_t entries[NCH]={0.};
 
 	TH1F* diffbaseline = new TH1F("diffbaseline", "correzione all'integrale per calcolo baseline ", 100, -0.1, 0.1);
+	TH1F* min = new TH1F("min", " ", 50, -100, 10);
 
 
 	for (int channel=0; channel<NCH; channel++) {
 
-		TH1F* others = new TH1F("others", Form("distr. dei rapporti integrale/vcharge per canali =/=%d",channel), 100, 0.045, 0.055);
-		TH1F* hist = new TH1F("hist", Form("distribuzione dei rapporti integrale/vcharge canale %d ", channel), 100, 0.045, 0.055);
+		TH1F* others = new TH1F("others", "", 100, 0.048, 0.052);
+		TH1F* hist = new TH1F("hist", " ", 100, 0.048, 0.052);
 
 		for (int j=0; j<NCH; j++) {
+			if(j==channel){
+				
+				double basenostra =0; 
+				for (int entry=0; entry<nEntries ; entry++) {
+					tree->GetEntry(entry);
+					float sum=0;
 
-			double basenostra =0; 
-			for (int entry=0; entry<nEntries ; entry++) {
-				tree->GetEntry(entry);
-				float sum=0;
+					min->Fill(vcharge[j]); //to assess if there is an physical event
 
-				for(int i=0; i<BMAX; i++){
-					basenostra+=pshape[j][i];
-				}
 
-				basenostra/=BMAX;
+					for(int i=0; i<BMAX; i++){
+						basenostra+=pshape[j][i];
+					}
+
+					basenostra/=BMAX;
         //diffbaseline->Fill(basenostra-base[channel]);
 
-				for (int i=BMAX; i<1024; i++) {
-					sum+=pshape[j][i]-base[j];
-				}
-
-				rapporto = sum*DT/vcharge[j];
-
-				if(vcharge[j] < -vmin) {
-					if(j==channel){
-						hist->Fill(rapporto);
-					}
-					else {
-						others->Fill(rapporto);
+					for (int i=BMAX; i<1024; i++) {
+						sum+=pshape[j][i]-base[j];
 					}
 
-					diffbaseline->Fill((basenostra-base[j])*(1024)/(sum*DT));      
-				}
+					rapporto = sum*DT/vcharge[j];
 
+					if(vcharge[j] < -vmin) {
+						if(j==channel){
+							hist->Fill(rapporto);
+							diffbaseline->Fill((basenostra-base[j])*(1024)/(sum*DT));      
+						}
+						else {
+							others->Fill(rapporto);
+						}
+
+					}
+
+				}
 			}
 		}
 
-       	Double_t norm = hist->GetEntries();
-		hist->Scale(1./norm);
-		norm = others->GetEntries();
-		others->Scale(1./norm);
+    //    	Double_t norm = hist->GetEntries();  //QUA ANDREBBE GETMAXIMUM
+    //    	hist->Scale(1./norm);
+    //    	norm = others->GetEntries();
+    //    	others->Scale(1./norm);
 
-    TCanvas* c1 = new TCanvas("c1",Form("Istogramma rapporti con carica canale %d vs altri", channel),600,800); // Nome, Titolo,x,y
-  	c1->cd(); // Apre una sessione
-    //c1->SetLogy();
-    //hist->SetMarkerStyle(21);
-    //others->SetMarkerStyle(22);
-    hist->SetLineColor(2);
-    others->SetLineColor(4);
-  	hist->Draw("HIST"); // Disegna l'istogramma
-  	others->Draw("SAME HIST");
-  	c1->Update();
-  	c1->SaveAs(Form("%s/hist_charge_%d.pdf", plotsDir.c_str(),channel));
-
+    // 	TCanvas* c1 = new TCanvas("c1",Form("Istogramma rapporti con carica canale %d vs altri", channel),600,800); // Nome, Titolo,x,y
+  		// c1->cd(); // Apre una sessione
+  		// hist->SetLineColor(2);
+  		// others->SetLineColor(4);
+  		// hist->SetXTitle("I/C");
+  		// hist->SetYTitle("N eventi");
+  		// hist->Draw("HIST"); // Disegna l'istogramma
+  		// others->Draw("SAME HIST");
+  		// c1->Update();
+  		// c1->SaveAs(Form("%s/hist_charge_%d.pdf", plotsDir.c_str(),channel));
 
 
-  	x[channel]=channel;
-  	charges[channel]=hist->GetMean();
-  	err_charges[channel]=hist->GetStdDev();
 
-  	delete hist;
-  	delete others;
-		// delete c1;
+		x[channel]=channel+1;
+		charges[channel]=hist->GetMean();
+		err_charges[channel]=hist->GetStdDev();
+		entries[channel] = hist->GetEntries();
 
-  }
+		delete hist;
+		delete others;
+  		// delete c1;
 
-	TCanvas* c3 = new TCanvas("c3","diff delle baseline stefanoèstupido",600,800); // Nome, Titolo,x,y
-  	c3->cd(); // Apre una sessione
-  	diffbaseline->Draw(); // Disegna l'istogramma
-  	c3->SaveAs(Form("%s/diffbaseline.pdf", plotsDir.c_str()));
+	}
+	
+	TCanvas* ao1 = new TCanvas("c1","Istogramma Cariche ",600,800); // Nome, Titolo,x,y
+ 	ao1->cd(); // Apre una sessione
+ 	ao1->SetLogy();
+ 	min->SetXTitle("charge");
+ 	min->SetYTitle("N eventi");
+  	min->Draw(); // Disegna l'istogramma
+  	ao1->SaveAs(Form("%s/hist_charge.pdf", plotsDir.c_str()));
 
 
-//------------------------------------------------- PARTE media sui singoli canali -----------------------------------------
 
-  	double sum = 0;
-  	double err = 0;
-  	for (int channel=0; channel<NCH; channel++){
-  		double temp = 0;
-  		sum+=charges[channel];
-  		temp = err_charges[channel]*err_charges[channel];
-  		err+=temp;
-  	}
-  	sum/=NCH;
-  	err = sqrt(err)/NCH;
 
-  	TCanvas* c2 = new TCanvas("c2", "Grafico Calibrazione");
-  	c2->cd();
-  	TGraphErrors* gr=new TGraphErrors(NCH, x, charges, err_x, err_charges);
-  	gr->SetTitle("Confronto medie e std_dev di R = Integrale/Vcharge");
-  	gr->GetXaxis()->SetTitle("Numero del canale");
-  	gr->GetYaxis()->SetTitle("Integrale/Vcharge");
-  	gr->SetMarkerStyle(21);
-  	gr->SetMarkerSize(1.0);
-  	gr->Draw("AP");
-
-  	TLatex l;
-  	l.SetTextSize(0.025);
-  //l.SetTextAngle(30.);
-  	l.DrawLatex(13,0.074,Form("R_avg = %f",sum));
-  	l.DrawLatex(13,0.072,Form("R_avg_err = %f",err));
-
-  	c2->SaveAs(Form("%s/calibrazione.pdf", plotsDir.c_str()));
-
-  	delete gr;
-  	delete c2;
+	// TCanvas* c3 = new TCanvas("c3","diff delle baseline",600,800); // Nome, Titolo,x,y
+ //  	c3->cd(); // Apre una sessione
+ //  	diffbaseline->Draw(); // Disegna l'istogramma
+ //  	c3->SaveAs(Form("%s/diffbaseline.pdf", plotsDir.c_str()));
 
 
 //------------------------------------- PARTE su tutti i canali unico istogramma ---------------------------
 
 
-/*  TH1F* hist = new TH1F("hist", "distribuzione dei rapporti integrale/vcharge ", 100, -2, 2);
-  for (int channel=0; channel<NCH; channel++) {
 
-  	double basenostra =0; 
-    
-    for (int entry=0; entry<nEntries ; entry++) {
-      
-      tree->GetEntry(entry);
-      float sum=0;
 
-      for(int i=0; i<BMAX; i++){
-      	basenostra+=pshape[channel][i];
-      }
+	TH1F* totale = new TH1F("totale", " ", 100, 0.043, 0.057);
+	for (int channel=0; channel<NCH; channel++) {
 
-      basenostra/=BMAX;
-      
-      for (int i=BMAX; i<1024; i++) {
-        sum+=pshape[channel][i]-basenostra;
-      }
+		for (int entry=0; entry<nEntries ; entry++) {
 
-      rapporto = sum*=DT/vcharge[channel];
+			tree->GetEntry(entry);
+			float sum=0;
 
-      if(vcharge[channel] < -vmin) hist->Fill(rapporto);    
-    }
-  }*/
+			for (int i=0; i<1024; i++) {
+				sum+=pshape[channel][i]-base[channel];
+			}
 
-/*	TCanvas* c1 = new TCanvas("c1","Istogramma rapporti con carica",600,800); // Nome, Titolo,x,y
- 	c1->cd(); // Apre una sessione
- 	c1->SetLogy();
-  	hist->Draw(); // Disegna l'istogramma
-  	c1->SaveAs(Form("%s/hisd_charge_totale.pdf", plotsDir.c_str()));
+			rapporto = sum*=DT/vcharge[channel];
 
-  	double R = hist->GetMean();
-  	double R_err = hist->GetStdDev();
+			if(vcharge[channel] < -vmin) totale->Fill(rapporto);    
+		}
+	}
 
-  	std::cout << "R_avg = " << R << std::endl;
-  	std::cout << "R_err = " << R_err << std::endl;
+	double s = totale->GetStdDev();
+	std::cout<<s<<std::endl;
 
-  	delete hist;
-  	delete c1;
-*/
+
+	TCanvas* ao = new TCanvas("c1","Istogramma rapporti con carica",600,800); // Nome, Titolo,x,y
+ 	ao->cd(); // Apre una sessione
+ 	ao->SetLogy();
+ 	totale->SetXTitle("I/C");
+ 	totale->SetYTitle("N eventi");
+  	totale->Draw(); // Disegna l'istogramma
+  	ao->SaveAs(Form("%s/hist_charge_totale.pdf", plotsDir.c_str()));
+
+
+  	delete ao;
+
+
+//------------------------------------------------- PARTE media sui singoli canali -----------------------------------------
+
+
+  	Double_t sigma[NCH]={0.};
+  	Double_t medie[NCH]={0.};
+
+  	double M = totale->GetMean();
+
+  	for(int i =0; i<NCH; i++){
+  		if(entries[i]!=0){
+  			sigma[i]= 2*s/sqrt(entries[i]);
+  		}
+  		else charges[i]=M;
+  		medie[i] = M;
+  	}
+
+
+
+  	TCanvas* c2 = new TCanvas("c2", "Grafico Calibrazione");
+  	c2->cd();
+  	TMultiGraph *mg = new TMultiGraph();
+  	TGraphErrors* gr=new TGraphErrors(NCH, x, medie, err_x, sigma);
+  	gr->GetXaxis()->SetTitle("Canale");
+  	gr->GetYaxis()->SetTitle("I/C Medio");
+  	gr->SetMarkerStyle(21);
+  	gr->SetMarkerSize(1.0);
+  	TGraphErrors* gr1=new TGraphErrors(NCH, x, charges, err_x, err_x);
+  	gr1->SetMarkerColorAlpha(kRed, 1);
+  	gr1->SetMarkerStyle(20);
+
+  	mg->Add(gr1);
+  	mg->Add(gr);
+  	mg->Draw("AP");
+
+
+  // 	TLatex l;
+  // 	l.SetTextSize(0.025);
+  // 	l.SetTextAngle(30.);
+  // 	l.DrawLatex(13,0.074,Form("R_avg = %f",sum));
+  // 	l.DrawLatex(13,0.072,Form("R_avg_err = %f",err));
+  	c2->SaveAs(Form("%s/calibrazione.pdf", plotsDir.c_str()));
+
+  	delete gr;
+  	delete gr1;
+  	delete c2;
+  	delete totale;
+
 
 
   }
