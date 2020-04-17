@@ -9,10 +9,6 @@
 #define vmin 50
 
 
-#include<iostream>
-#include<stdio.h>
-//#include<vector>
-
 #include"TFile.h"
 #include"TTree.h"
 #include"TString.h"
@@ -23,6 +19,10 @@
 #include"TLatex.h"
 #include"TAttLine.h"
 #include"TMultiGraph.h"
+
+#include<iostream>
+#include<stdio.h>
+//#include<vector>
 
 
 int main(int argc, char* argv[]) {
@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
 	std::string plotsDir(Form("plots_checkCharge_sodio/"));
 	system( Form("mkdir -p %s", plotsDir.c_str()) );
 
-  // per grafico calibrazione
+	// per grafico calibrazione
 
 	Double_t x[NCH]={0.};
 	Double_t charges[NCH]={0.};
@@ -79,49 +79,51 @@ int main(int argc, char* argv[]) {
 	TH1F* min = new TH1F("min", " ", 50, -100, 10);
 
 
-	for (int channel=0; channel<NCH; channel++) {
+	//ISTOGRAMMI SOVRAPPOSTI 
 
-		TH1F* others = new TH1F("others", "", 100, 0.048, 0.052);
-		TH1F* hist = new TH1F("hist", " ", 100, 0.048, 0.052);
+	// for (int channel=0; channel<NCH; channel++) {
 
-		for (int j=0; j<NCH; j++) {
-			if(j==channel){
-				
-				double basenostra =0; 
-				for (int entry=0; entry<nEntries ; entry++) {
-					tree->GetEntry(entry);
-					float sum=0;
+	// 	TH1F* others = new TH1F("others", "", 100, 0.048, 0.052);
+	// 	TH1F* hist = new TH1F("hist", " ", 100, 0.048, 0.052);
 
-					min->Fill(vcharge[j]); //to assess if there is an physical event
+	// 	for (int j=0; j<NCH; j++) {
+	// 		if(j==channel){
+
+	// 			double basenostra =0; 
+	// 			for (int entry=0; entry<nEntries ; entry++) {
+	// 				tree->GetEntry(entry);
+	// 				float sum=0;
+
+	// 				min->Fill(vcharge[j]); //to assess if there is an physical event
 
 
-					for(int i=0; i<BMAX; i++){
-						basenostra+=pshape[j][i];
-					}
+	// 				for(int i=0; i<BMAX; i++){
+	// 					basenostra+=pshape[j][i];
+	// 				}
 
-					basenostra/=BMAX;
-        //diffbaseline->Fill(basenostra-base[channel]);
+	// 				basenostra/=BMAX;
+	//        //diffbaseline->Fill(basenostra-base[channel]);
 
-					for (int i=BMAX; i<1024; i++) {
-						sum+=pshape[j][i]-base[j];
-					}
+	// 				for (int i=BMAX; i<1024; i++) {
+	// 					sum+=pshape[j][i]-base[j];
+	// 				}
 
-					rapporto = sum*DT/vcharge[j];
+	// 				rapporto = sum*DT/vcharge[j];
 
-					if(vcharge[j] < -vmin) {
-						if(j==channel){
-							hist->Fill(rapporto);
-							diffbaseline->Fill((basenostra-base[j])*(1024)/(sum*DT));      
-						}
-						else {
-							others->Fill(rapporto);
-						}
+	// 				if(vcharge[j] < -vmin) {
+	// 					if(j==channel){
+	// 						hist->Fill(rapporto);
+	// 						diffbaseline->Fill((basenostra-base[j])*(1024)/(sum*DT));      
+	// 					}
+	// 					else {
+	// 						others->Fill(rapporto);
+	// 					}
 
-					}
+	// 				}
 
-				}
-			}
-		}
+	// 			}
+	// 		}
+	// 	}
 
     //    	Double_t norm = hist->GetEntries();  //QUA ANDREBBE GETMAXIMUM
     //    	hist->Scale(1./norm);
@@ -140,6 +142,34 @@ int main(int argc, char* argv[]) {
   		// c1->SaveAs(Form("%s/hist_charge_%d.pdf", plotsDir.c_str(),channel));
 
 
+	for (int j=0; j<NCH; j++) {
+		TH1F* hist = new TH1F("hist", " ", 100, 0.048, 0.052);
+		double basenostra =0;
+
+		for (int entry=0; entry<nEntries ; entry++) {
+			tree->GetEntry(entry);
+			float sum=0;
+
+			min->Fill(vcharge[j]); //to assess if there is an physical event
+
+			for(int i=0; i<BMAX; i++){
+				basenostra+=pshape[j][i];
+			}
+			basenostra/=BMAX;
+	       //diffbaseline->Fill(basenostra-base[channel]);
+
+			for (int i=BMAX; i<1024; i++) {
+				sum+=pshape[j][i]-base[j];
+			}
+
+			rapporto = sum*DT/vcharge[j];
+
+			if(vcharge[j] < -vmin) {
+				hist->Fill(rapporto);
+				diffbaseline->Fill((basenostra-base[j])*(1024)/(sum*DT));      
+
+			}
+		}
 
 		x[channel]=channel+1;
 		charges[channel]=hist->GetMean();
@@ -152,14 +182,31 @@ int main(int argc, char* argv[]) {
 
 	}
 	
-	TCanvas* ao1 = new TCanvas("c1","Istogramma Cariche ",600,800); // Nome, Titolo,x,y
- 	ao1->cd(); // Apre una sessione
- 	ao1->SetLogy();
- 	min->SetXTitle("charge");
- 	min->SetYTitle("N eventi");
-  	min->Draw(); // Disegna l'istogramma
-  	ao1->SaveAs(Form("%s/hist_charge.pdf", plotsDir.c_str()));
+	TCanvas* c2 = new TCanvas("c2", "Grafico Calibrazione");
+  	c2->cd();
+  	TGraphErrors* gr=new TGraphErrors(NCH, x, charges, err_x, err_charges);
+	TF1 *f = new TF1("f", "[0]"); 
+	gr->Fit(f); 
+	gr->Draw("A");
+	gr->GetXaxis()->SetTitle("Canale");
+  	gr->GetYaxis()->SetTitle("I/C Medio");
+  	gr->SetMarkerStyle(21);
+  	gr->SetMarkerSize(1.0);
+  	c2->SaveAs(Form("%s/calibrazione.pdf", plotsDir.c_str()));
+    
 
+
+
+
+
+
+	// TCanvas* ao1 = new TCanvas("c1","Istogramma Cariche ",600,800); // Nome, Titolo,x,y
+	// 	ao1->cd(); // Apre una sessione
+ 	// 	ao1->SetLogy();
+ 	// 	min->SetXTitle("charge");
+ 	// 	min->SetYTitle("N eventi");
+ 	//  min->Draw(); // Disegna l'istogramma
+ 	//  ao1->SaveAs(Form("%s/hist_charge.pdf", plotsDir.c_str()));
 
 
 
@@ -174,26 +221,26 @@ int main(int argc, char* argv[]) {
 
 
 
-	TH1F* totale = new TH1F("totale", " ", 100, 0.043, 0.057);
-	for (int channel=0; channel<NCH; channel++) {
+  	TH1F* totale = new TH1F("totale", " ", 100, 0.043, 0.057);
+  	for (int channel=0; channel<NCH; channel++) {
 
-		for (int entry=0; entry<nEntries ; entry++) {
+  		for (int entry=0; entry<nEntries ; entry++) {
 
-			tree->GetEntry(entry);
-			float sum=0;
+  			tree->GetEntry(entry);
+  			float sum=0;
 
-			for (int i=0; i<1024; i++) {
-				sum+=pshape[channel][i]-base[channel];
-			}
+  			for (int i=0; i<1024; i++) {
+  				sum+=pshape[channel][i]-base[channel];
+  			}
 
-			rapporto = sum*=DT/vcharge[channel];
+  			rapporto = sum*=DT/vcharge[channel];
 
-			if(vcharge[channel] < -vmin) totale->Fill(rapporto);    
-		}
-	}
+  			if(vcharge[channel] < -vmin) totale->Fill(rapporto);    
+  		}
+  	}
 
-	double s = totale->GetStdDev();
-	std::cout<<s<<std::endl;
+  	double s = totale->GetStdDev();
+  	std::cout<<s<<std::endl;
 
 
 	TCanvas* ao = new TCanvas("c1","Istogramma rapporti con carica",600,800); // Nome, Titolo,x,y
@@ -211,36 +258,36 @@ int main(int argc, char* argv[]) {
 //------------------------------------------------- PARTE media sui singoli canali -----------------------------------------
 
 
-  	Double_t sigma[NCH]={0.};
-  	Double_t medie[NCH]={0.};
+  	// Double_t sigma[NCH]={0.};
+  	// Double_t medie[NCH]={0.};
 
-  	double M = totale->GetMean();
+  	// double M = totale->GetMean();
 
-  	for(int i =0; i<NCH; i++){
-  		if(entries[i]!=0){
-  			sigma[i]= 2*s/sqrt(entries[i]);
-  		}
-  		else charges[i]=M;
-  		medie[i] = M;
-  	}
+  	// for(int i =0; i<NCH; i++){
+  	// 	if(entries[i]!=0){
+  	// 		sigma[i]= 2*s/sqrt(entries[i]);
+  	// 	}
+  	// 	else charges[i]=M;
+  	// 	medie[i] = M;
+  	// }
 
 
 
-  	TCanvas* c2 = new TCanvas("c2", "Grafico Calibrazione");
-  	c2->cd();
-  	TMultiGraph *mg = new TMultiGraph();
-  	TGraphErrors* gr=new TGraphErrors(NCH, x, medie, err_x, sigma);
-  	gr->GetXaxis()->SetTitle("Canale");
-  	gr->GetYaxis()->SetTitle("I/C Medio");
-  	gr->SetMarkerStyle(21);
-  	gr->SetMarkerSize(1.0);
-  	TGraphErrors* gr1=new TGraphErrors(NCH, x, charges, err_x, err_x);
-  	gr1->SetMarkerColorAlpha(kRed, 1);
-  	gr1->SetMarkerStyle(20);
+  	// TCanvas* c2 = new TCanvas("c2", "Grafico Calibrazione");
+  	// c2->cd();
+  	// TMultiGraph *mg = new TMultiGraph();
+  	// TGraphErrors* gr=new TGraphErrors(NCH, x, medie, err_x, sigma);
+  	// gr->GetXaxis()->SetTitle("Canale");
+  	// gr->GetYaxis()->SetTitle("I/C Medio");
+  	// gr->SetMarkerStyle(21);
+  	// gr->SetMarkerSize(1.0);
+  	// TGraphErrors* gr1=new TGraphErrors(NCH, x, charges, err_x, err_x);
+  	// gr1->SetMarkerColorAlpha(kRed, 1);
+  	// gr1->SetMarkerStyle(20);
 
-  	mg->Add(gr1);
-  	mg->Add(gr);
-  	mg->Draw("AP");
+  	// mg->Add(gr1);
+  	// mg->Add(gr);
+  	// mg->Draw("AP");
 
 
   // 	TLatex l;
@@ -248,7 +295,7 @@ int main(int argc, char* argv[]) {
   // 	l.SetTextAngle(30.);
   // 	l.DrawLatex(13,0.074,Form("R_avg = %f",sum));
   // 	l.DrawLatex(13,0.072,Form("R_avg_err = %f",err));
-  	c2->SaveAs(Form("%s/calibrazione.pdf", plotsDir.c_str()));
+  	// c2->SaveAs(Form("%s/calibrazione.pdf", plotsDir.c_str()));
 
   	delete gr;
   	delete gr1;
