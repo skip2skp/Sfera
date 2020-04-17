@@ -22,7 +22,7 @@
 
 #include<iostream>
 #include<stdio.h>
-//#include<vector>
+#include<vector>
 
 
 int main(int argc, char* argv[]) {
@@ -74,6 +74,7 @@ int main(int argc, char* argv[]) {
 	Double_t err_charges[NCH]={0.};
 	Double_t *err_x=0;
 	Double_t entries[NCH]={0.};
+
 
 	TH1F* diffbaseline = new TH1F("diffbaseline", "correzione all'integrale per calcolo baseline ", 100, -0.1, 0.1);
 	TH1F* min = new TH1F("min", " ", 50, -100, 10);
@@ -170,31 +171,48 @@ int main(int argc, char* argv[]) {
 
 			}
 		}
-
-		x[channel]=channel+1;
-		charges[channel]=hist->GetMean();
-		err_charges[channel]=hist->GetStdDev();
-		entries[channel] = hist->GetEntries();
-
+		
+		x[j]=j+1;
+		entries[j] = hist->GetEntries();
+		charges[j]=hist->GetMean();
+		err_charges[j]=hist->GetStdDev();
 		delete hist;
-		delete others;
   		// delete c1;
 
+	}
+
+	int k=0;
+	std::vector<double> means;
+	std::vector<double> err_means;
+	std::vector<double> x_new;
+
+	int n=0;
+	for(int i=0; i<NCH; i++){
+		if(entries[i]>0){
+			means.push_back(charges[i]);
+			err_means.push_back(err_charges[i]);
+			x_new.push_back(x[i]);
+			n++;
+		}
 	}
 	
 	TCanvas* c2 = new TCanvas("c2", "Grafico Calibrazione");
   	c2->cd();
-  	TGraphErrors* gr=new TGraphErrors(NCH, x, charges, err_x, err_charges);
+  	TGraphErrors* gr=new TGraphErrors(n, &x_new[0], &means[0], err_x, &err_means[0]);
 	TF1 *f = new TF1("f", "[0]"); 
 	gr->Fit(f); 
-	gr->Draw("A");
+	double_t chi2 = gr->Chisquare(f);
 	gr->GetXaxis()->SetTitle("Canale");
   	gr->GetYaxis()->SetTitle("I/C Medio");
   	gr->SetMarkerStyle(21);
   	gr->SetMarkerSize(1.0);
+	gr->Draw("AP");
   	c2->SaveAs(Form("%s/calibrazione.pdf", plotsDir.c_str()));
-    
 
+  	std::cout<< chi2 << " con "<< n<< " gdl."<<std::endl;
+
+    
+  	//gr->Chisquare(f);
 
 
 
@@ -221,38 +239,38 @@ int main(int argc, char* argv[]) {
 
 
 
-  	TH1F* totale = new TH1F("totale", " ", 100, 0.043, 0.057);
-  	for (int channel=0; channel<NCH; channel++) {
+ //  	TH1F* totale = new TH1F("totale", " ", 100, 0.043, 0.057);
+ //  	for (int channel=0; channel<NCH; channel++) {
 
-  		for (int entry=0; entry<nEntries ; entry++) {
+ //  		for (int entry=0; entry<nEntries ; entry++) {
 
-  			tree->GetEntry(entry);
-  			float sum=0;
+ //  			tree->GetEntry(entry);
+ //  			float sum=0;
 
-  			for (int i=0; i<1024; i++) {
-  				sum+=pshape[channel][i]-base[channel];
-  			}
+ //  			for (int i=0; i<1024; i++) {
+ //  				sum+=pshape[channel][i]-base[channel];
+ //  			}
 
-  			rapporto = sum*=DT/vcharge[channel];
+ //  			rapporto = sum*=DT/vcharge[channel];
 
-  			if(vcharge[channel] < -vmin) totale->Fill(rapporto);    
-  		}
-  	}
+ //  			if(vcharge[channel] < -vmin) totale->Fill(rapporto);    
+ //  		}
+ //  	}
 
-  	double s = totale->GetStdDev();
-  	std::cout<<s<<std::endl;
-
-
-	TCanvas* ao = new TCanvas("c1","Istogramma rapporti con carica",600,800); // Nome, Titolo,x,y
- 	ao->cd(); // Apre una sessione
- 	ao->SetLogy();
- 	totale->SetXTitle("I/C");
- 	totale->SetYTitle("N eventi");
-  	totale->Draw(); // Disegna l'istogramma
-  	ao->SaveAs(Form("%s/hist_charge_totale.pdf", plotsDir.c_str()));
+ //  	double s = totale->GetStdDev();
+ //  	std::cout<<s<<std::endl;
 
 
-  	delete ao;
+	// TCanvas* ao = new TCanvas("c1","Istogramma rapporti con carica",600,800); // Nome, Titolo,x,y
+ // 	ao->cd(); // Apre una sessione
+ // 	ao->SetLogy();
+ // 	totale->SetXTitle("I/C");
+ // 	totale->SetYTitle("N eventi");
+ //  	totale->Draw(); // Disegna l'istogramma
+ //  	ao->SaveAs(Form("%s/hist_charge_totale.pdf", plotsDir.c_str()));
+
+
+ //  	delete ao;
 
 
 //------------------------------------------------- PARTE media sui singoli canali -----------------------------------------
@@ -298,9 +316,9 @@ int main(int argc, char* argv[]) {
   	// c2->SaveAs(Form("%s/calibrazione.pdf", plotsDir.c_str()));
 
   	delete gr;
-  	delete gr1;
+  	//delete gr1;
   	delete c2;
-  	delete totale;
+  	//delete totale;
 
 
 
