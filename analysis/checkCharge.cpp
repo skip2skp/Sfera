@@ -46,10 +46,7 @@ int main(int argc, char* argv[]) {
 
 
 	//------------------------------------------------- PARTE media sui singoli canali -----------------------------------------
-
-  	// istrogrammi
-
-
+	
 
   	// variabili da leggere: numero evento, baseline, profilo, integrale calcolato dal digitizer
 
@@ -62,20 +59,23 @@ int main(int argc, char* argv[]) {
 	tree->SetBranchAddress("pshape", &pshape);
 
 	int nEntries = tree->GetEntries();
-	float rapporto;
 
+	// Crea directory per i plot
+	
 	std::string plotsDir(Form("plots_checkCharge_sodio/"));
 	system( Form("mkdir -p %s", plotsDir.c_str()) );
 
 	// per grafico calibrazione
 
-	Double_t x[NCH]={0.};
+	/*Double_t x[NCH]={0.};
 	Double_t charges[NCH]={0.};
-	Double_t err_charges[NCH]={0.};
+	Double_t err_charges[NCH]={0.};*/
 	Double_t *err_x=0;
-	Double_t entries[NCH]={0.};
+	//Double_t entries[NCH]={0.};
 
 
+	// calcolo baseline
+	
 	TH1F* diffbaseline = new TH1F("diffbaseline", "correzione all'integrale per calcolo baseline ", 100, -0.1, 0.1);
 	TH1F* min = new TH1F("min", " ", 50, -100, 10);
 
@@ -143,64 +143,68 @@ int main(int argc, char* argv[]) {
   		// c1->SaveAs(Form("%s/hist_charge_%d.pdf", plotsDir.c_str(),channel));
 
 
-	for (int j=0; j<NCH; j++) {
-		TH1F* hist = new TH1F("hist", " ", 100, 0.048, 0.052);
-		double basenostra =0;
 
-		for (int entry=0; entry<nEntries ; entry++) {
-			tree->GetEntry(entry);
-			float sum=0;
-
-			min->Fill(vcharge[j]); //to assess if there is an physical event
-
-			for(int i=0; i<BMAX; i++){
-				basenostra+=pshape[j][i];
-			}
-			basenostra/=BMAX;
-	       //diffbaseline->Fill(basenostra-base[channel]);
-
-			for (int i=BMAX; i<1024; i++) {
-				sum+=pshape[j][i]-base[j];
-			}
-
-			rapporto = sum*DT/vcharge[j];
-
-			if(vcharge[j] < -vmin) {
-				hist->Fill(rapporto);
-				diffbaseline->Fill((basenostra-base[j])*(1024)/(sum*DT));      
-
-			}
-		}
-		
-		x[j]=j+1;
-		entries[j] = hist->GetEntries();
-		charges[j]=hist->GetMean();
-		err_charges[j]=hist->GetStdDev();
-		delete hist;
-  		// delete c1;
-
-	}
-
-	int k=0;
 	std::vector<double> means;
 	std::vector<double> err_means;
-	std::vector<double> x_new;
+	std::vector<double> x;
+	
+	for (int j=0; j<NCH; j++) {
+	  
+	  TH1F* hist = new TH1F("hist", " ", 100, 0.048, 0.052); // rapporto integrale/carica
+	  double basenostra =0;
+	  
+	  for (int entry=0; entry<nEntries ; entry++) {
+	    
+	    tree->GetEntry(entry);
+	    
+	    float sum=0;
+	    
+	    min->Fill(vcharge[j]); //to assess if there is a physical event
+	    
+	    for(int i=0; i<BMAX; i++){
+	      basenostra+=pshape[j][i]; // media sui primi BMAX valori
+	    }
+	    basenostra/=BMAX;
+	    //diffbaseline->Fill(basenostra-base[channel]);
+	    
+	    for (int i=BMAX; i<1024; i++) {
+	      sum+=pshape[j][i]-base[j];
+	    }
+	    
+	    if(vcharge[j] < -vmin) {
+	      hist->Fill(sum*DT/vcharge[j]); // rapporto integrale/carica
+	      diffbaseline->Fill((basenostra-base[j])*(1024)/(sum*DT));  // confronto tra baseline    
 
-	int n=0;
+	    }
+	  }
+	  
+	  if(hist->GetEntries()>0) {
+	    means.push_back(hist->GetMean());
+	    err_means.push_back(hist->GetStdDev());
+	    x.push_back(j+1);
+	    
+	  }
+			    
+
+	  
+	  
+	}
+
+	/*int n=0;
 	for(int i=0; i<NCH; i++){
 		if(entries[i]>0){
 			means.push_back(charges[i]);
 			err_means.push_back(err_charges[i]);
 			x_new.push_back(x[i]);
 			n++;
-		}
-	}
+			}
+			}*/
 	
 	TCanvas* c2 = new TCanvas("c2", "Grafico Calibrazione");
   	c2->cd();
-  	TGraphErrors* gr=new TGraphErrors(n, &x_new[0], &means[0], err_x, &err_means[0]);
-	TF1 *f = new TF1("f", "[0]"); 
-	gr->Fit(f); 
+  	TGraphErrors* gr=new TGraphErrors(x.size(), &x[0], &means[0], err_x, &err_means[0]); // plot integrale/carica vs canale
+	TF1 *f = new TF1("f", "[0]"); // funzione costante
+	gr->Fit(f); // fit sul grafico
 	double_t chi2 = gr->Chisquare(f);
 	gr->GetXaxis()->SetTitle("Canale");
   	gr->GetYaxis()->SetTitle("I/C Medio");
@@ -209,16 +213,9 @@ int main(int argc, char* argv[]) {
 	gr->Draw("AP");
   	c2->SaveAs(Form("%s/calibrazione.pdf", plotsDir.c_str()));
 
-  	std::cout<< chi2 << " con "<< n<< " gdl."<<std::endl;
+  	std::cout<< " chi-square test returned a value of chi-suare/Ndof of " << " con "<< chi2/f->GetNDF()<<std::endl;
 
-    
-  	//gr->Chisquare(f);
-
-
-
-
-
-	// TCanvas* ao1 = new TCanvas("c1","Istogramma Cariche ",600,800); // Nome, Titolo,x,y
+  	// TCanvas* ao1 = new TCanvas("c1","Istogramma Cariche ",600,800); // Nome, Titolo,x,y
 	// 	ao1->cd(); // Apre una sessione
  	// 	ao1->SetLogy();
  	// 	min->SetXTitle("charge");
