@@ -135,11 +135,15 @@ if(scelta1==1) split=0.5;
   //system( Form("mkdir -p %s", plotsDir2.c_str()) );
   //genero file per risultati dei fit
 	std::ofstream out_dat;
-	out_dat.open("spettro_Cesio/risultati.txt");
   std::ofstream out_even;
-	std::ofstream out_odd;
-	out_odd.open("spettro_Cesio/odd.txt");
-	out_even.open("spettro_Cesio/even.txt");
+	std::ofstream out_odd;  
+	out_dat.open("spettro_Cesio/risultati.txt");
+  if(split!=1) {
+	  out_odd.open("spettro_Cesio/odd.txt");  
+	  out_even.open("spettro_Cesio/even.txt");  
+  }
+
+  
 
   double xmin[NCH] = {950, 650, 650, 750, 850, 800, 700, 750, 700, 700, 900, 950, 700, 800, 770, 750};
 
@@ -155,7 +159,7 @@ if(scelta1==1) split=0.5;
 		while(parity<2){      
 		
 			for (int entry=0; entry<nEntries*split ; entry++) {
-        tree->GetEntry(entry*2+parity); 	// prendi l'evento i-esimo 
+        tree->GetEntry(entry/split + parity); 	// prendi l'evento i-esimo 
         if(-vcharge[channel]>CMIN){spettro -> Fill(-vcharge[channel]);} //riempi l'isto 
       }
 
@@ -248,8 +252,10 @@ if(scelta>=3){
 		out_dat<<"G+FD+FD+BG\t"<< Gamp4<<"\t"<<Gmean4<<"\t"<<Gvar4<<"\t"<<"chisq:"<<chi4<<"\t"<<Ndf4<<std::endl;
 		 out_dat<<"PK4/PK1="<<Gmean4/Gmean1<<std::endl;
 		
-		if(parity==0) out_even<<Gmean4<<"\t"<<Gmean4err<<std::endl;
-		if(parity==1)	out_odd<<Gmean4<<"\t"<<Gmean4err<<std::endl;
+		if(split!=1) {
+      if(parity==0) out_even<<Gmean4<<"\t"<<Gmean4err<<std::endl;
+		  else        	out_odd<<Gmean4<<"\t"<<Gmean4err<<std::endl;
+    }
 
 	  //out_dat<<"**"<<std::endl;
 
@@ -302,7 +308,8 @@ if(scelta>=3){
           delete plot_spettro;
       
 
-	parity++;
+	if(split!=1) parity++;
+  else parity = 2;
  }//while
       
     delete spettro;
@@ -315,8 +322,10 @@ if(scelta>=3){
 
 	//chiudi file dei dati
 	out_dat.close();
-  out_odd.close();
-  out_even.close(); 
+  if(split!=1) {
+    out_odd.close();
+    out_even.close();
+  } 
   return 0;
 
 }
