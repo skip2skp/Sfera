@@ -1,6 +1,8 @@
 // Lorenzo & Andrea 
-// versione 11/04/20
-//Questo programma controlla se c'è una dipendenza tra lo spostamento del picco del cesio all' aumentare delle funzioni aggiunte al fit
+// versione 22/04/20
+//Questo programma può:
+// - controllare se c'è una dipendenza tra lo spostamento del picco del cesio all' aumentare delle funzioni aggiunte al fit
+// fittare sia i padti "pari" e "quelli dispari separatamente "
 //0 : stampa solo gaussiana
 //1 : stampa G+FD ;risultati G e G+FD
 //2 : stampa G+FD+FD ;risultati G G+FD G+FD+FD
@@ -34,6 +36,7 @@
 #include"TFitResultPtr.h"
 #include"TCanvas.h"
 #include"TGraphErrors.h"
+
 
 
 Double_t fermiDirac(Double_t *x, Double_t *par) {
@@ -148,12 +151,15 @@ if(scelta1==1) split=0.5;
   double xmin[NCH] = {950, 650, 650, 750, 850, 800, 700, 750, 700, 700, 900, 950, 700, 800, 770, 750};
 
 
-
+	//		double param[12];
+			double_t PS[12];
 
 /***********************************BEGIN FIT AND K CALC*********************************************************************************/
 
   for (int channel=0; channel<NCH; channel++) {  
     TH1F* spettro = new TH1F("spettro",Form("Spettro Cesio [Ch: %d]", channel), NBIN, NMIN, NMAX);
+		
+		
 		  int parity=0;
 
 		while(parity<2){      
@@ -251,7 +257,11 @@ if(scelta>=3){
 		Double_t Gmean4err=fit_result_3->ParError(1);														
 		out_dat<<"G+FD+FD+BG\t"<< Gamp4<<"\t"<<Gmean4<<"\t"<<Gvar4<<"\t"<<"chisq:"<<chi4<<"\t"<<Ndf4<<std::endl;
 		 out_dat<<"PK4/PK1="<<Gmean4/Gmean1<<std::endl;
-		
+		rootfitFunc3->GetParameters(PS);
+				
+			//	param[0]=Gamp4;
+				//param[1]=Gmean4;
+				//param[2]=Gvar4;
 		if(split!=1) {
       if(parity==0) out_even<<Gmean4<<"\t"<<Gmean4err<<std::endl;
 		  else        	out_odd<<Gmean4<<"\t"<<Gmean4err<<std::endl;
@@ -293,15 +303,40 @@ if(scelta>=3){
  out_dat<<"-------------------------------------------------------"<<std::endl;
   
 
-
+	TF1* fgaus = new TF1("fgaus","gaus",FIT_START, NMAX);
+	TF1* fback = new TF1("fgaus",background,FIT_START, NMAX,3);
+	TF1* fd1 = new TF1("fgaus",fermiDirac,FIT_START, NMAX,3);
+	TF1* fd2 = new TF1("fgaus",fermiDirac,FIT_START, NMAX,3);	
+	fgaus->SetLineColor(kBlack);
+	fback->SetLineColor(kBlue);
+	fd1->SetLineColor(kGreen);
+	fd2->SetLineColor(kOrange);
+  fgaus->SetParameter(0,PS[0]);
+  fgaus->SetParameter(1,PS[1]);
+  fgaus->SetParameter(2,PS[2]);
+	fd1->SetParameter(0,PS[3]);
+	fd1->SetParameter(1,PS[4]);
+	fd1->SetParameter(2,PS[5]);
+	fd2->SetParameter(0,PS[6]);
+	fd2->SetParameter(1,PS[7]);
+	fd2->SetParameter(2,PS[8]);
+	fback->SetParameter(0,PS[9]);
+	fback->SetParameter(1,PS[10]);
+	fback->SetParameter(2,PS[11]);
+	
 
       
   //Stampiamo  tutto
    TCanvas* plot_spettro = new TCanvas("spettro",Form("Spettro Cesio [Ch: %d]", channel),1920,1080);
-   spettro->SetTitle(Form("Spettro Cesio [Ch: %d];Energia (MeV);Numero Eventi",channel));
-   plot_spettro -> cd(); // Apre una sessione
-    spettro -> Draw(); // Disegna l'istogramma
-    plot_spettro -> SaveAs(Form("%s/Ist_Spettro_Cs_%d.pdf", plotsDir.c_str(),channel));
+	 spettro->SetTitle(Form("Spettro Cesio [Ch: %d];Energia (MeV);Numero Eventi",channel));
+	 plot_spettro -> cd(); // Apre una sessione
+   spettro -> Draw(); // Disegna l'istogramma
+	
+    fgaus->Draw("same");
+		fd1->Draw("same");
+	  fd2->Draw("same");
+    fback->Draw("same");
+		plot_spettro -> SaveAs(Form("%s/Ist_Spettro_Cs_%d.pdf", plotsDir.c_str(),channel));
       
       
     
