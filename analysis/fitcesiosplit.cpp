@@ -263,9 +263,12 @@ if(scelta>=3){
 				//param[1]=Gmean4;
 				//param[2]=Gvar4;
 		if(split!=1) {
-      if(parity==0) out_even<<Gmean4<<"\t"<<Gmean4err<<std::endl;
-		  else        	out_odd<<Gmean4<<"\t"<<Gmean4err<<std::endl;
+      float a;
+      a = (Gmean4-Gmean1)/2;
+      if(parity==0) out_even<<Gmean4<<"  "<<Gmean4err<<"  "<<a<<"  "<<sqrt((Gmean4err*Gmean4err) + a*a)<<std::endl;
+		  else        	out_odd<<Gmean4<<"  "<<Gmean4err<<"  "<<a<<"  "<<sqrt((Gmean4err*Gmean4err) + a*a)<<std::endl;
     }
+
 
 	  //out_dat<<"**"<<std::endl;
 
