@@ -1,4 +1,3 @@
-// Palmisano 29/03/2020
 // Programma per integrare il profilo di impulso e confrontarlo con risultato ritornato dal digitizer.
 
 #define ERROR_USAGE 1
@@ -6,18 +5,24 @@
 
 #define NCH 16
 #define DT 938E-3 // ns
+#define BMAX 20
+#define vmin 50
 
-#include<iostream>
-#include<stdio.h>
-//#include<vector>
 
 #include"TFile.h"
 #include"TTree.h"
 #include"TString.h"
 #include"TH1F.h"
-#include"TH1.h"
+#include"TF1.h"
 #include"TCanvas.h"
 #include"TGraphErrors.h"
+#include"TLatex.h"
+#include"TAttLine.h"
+#include"TMultiGraph.h"
+
+#include<iostream>
+#include<stdio.h>
+#include<vector>
 
 
 int main(int argc, char* argv[]) {
@@ -29,61 +34,178 @@ int main(int argc, char* argv[]) {
     exit(ERROR_USAGE);
   }
 
-  bool signalOnly=1; // flag per selezionare solo gli eventi che hanno rilasciato una carica superiore a min_charge
-  float min_charge=20;
-  
+
+
   // file dove leggere il Tree
 
-  TString rootFileName(argv[1]);
-  TFile* rootFile = new TFile(rootFileName);
-  std::cout<<"Reading data from root file "<<argv[1]<<std::endl;
+	TString rootFileName(argv[1]);
+	TFile* rootFile = new TFile(rootFileName);
+	std::cout<<"Reading data from root file "<<argv[1]<<std::endl;
 
-  TTree* tree = (TTree*) rootFile->Get("tree");
-  if(!tree) {
-    std::cout<<"Error, no tree called tree in "<<argv[1]<<". Exiting."<<std::endl;
-    exit(ERROR_NOTREE);
-  }
-  
-  // variabili da leggere: numero evento, baseline, profilo, integrale calcolato dal digitizer
+	TTree* tree = (TTree*) rootFile->Get("tree");
+	if(!tree) {
+		std::cout<<"Error, no tree called tree in "<<argv[1]<<". Exiting."<<std::endl;
+		exit(ERROR_NOTREE);
+	}
 
-  int ev;
-  float base[NCH], vcharge[NCH], pshape[NCH][1024];
 
-  tree->SetBranchAddress("ev", &ev);
-  tree->SetBranchAddress("base", &base);
-  tree->SetBranchAddress("vcharge", &vcharge);
-  tree->SetBranchAddress("pshape", &pshape);
-
-  int nEntries = tree->GetEntries();
-
-  // Cartella dei grafici
-  
-  std::string plotsDir(Form("plots_checkcharge/"));
-  system( Form("mkdir -p %s", plotsDir.c_str()) );
-
-  // per grafico somma/carica vs canale
-
-  Double_t channel_axis[NCH];
-  Double_t charge_axis[NCH];
-  Double_t err_charge[NCH];
-  Double_t *err_channel=0; // Dummy
-  
-  for (int channel=0; channel<NCH; channel++) {
-    
-    TH1F* hist = new TH1F("hist", "distribuzione dei rapporti integrale/vcharge ", 100, -0.05, 0.5);
-    TH1F* charge = new TH1F("charge", "distribuzione delle cariche ", 1000, -1500, 100);
-    
-
-    for (int entry=0; entry<nEntries ; entry++) {
-      
-      tree->GetEntry(entry);
-      
-      float sum=0;
-      
-      for (int i=0; i<1024; i++) {
+	//------------------------------------------------- PARTE media sui singoli canali -----------------------------------------
 	
-    	sum+=pshape[channel][i]-pshape[channel][0]; //sottrae valore base. Si può far meglio, facendo una media dei primi valori
+
+  	// variabili da leggere: numero evento, baseline, profilo, integrale calcolato dal digitizer
+
+	int ev;
+	float base[NCH], vcharge[NCH], pshape[NCH][1024];
+
+	tree->SetBranchAddress("ev", &ev);
+	tree->SetBranchAddress("base", &base);
+	tree->SetBranchAddress("vcharge", &vcharge);
+	tree->SetBranchAddress("pshape", &pshape);
+
+	int nEntries = tree->GetEntries();
+
+	// Crea directory per i plot
 	
+	std::string plotsDir(Form("plots_checkCharge_sodio/"));
+	system( Form("mkdir -p %s", plotsDir.c_str()) );
+
+	// per grafico calibrazione
+
+	/*Double_t x[NCH]={0.};
+	Double_t charges[NCH]={0.};
+	Double_t err_charges[NCH]={0.};*/
+	Double_t *err_x=0;
+	//Double_t entries[NCH]={0.};
+
+
+	// calcolo baseline
+	
+	TH1F* diffbaseline = new TH1F("diffbaseline", "correzione all'integrale per calcolo baseline ", 100, -0.1, 0.1);
+	TH1F* min = new TH1F("min", " ", 50, -100, 10);
+
+
+	//ISTOGRAMMI SOVRAPPOSTI 
+
+	// for (int channel=0; channel<NCH; channel++) {
+
+	// 	TH1F* others = new TH1F("others", "", 100, 0.048, 0.052);
+	// 	TH1F* hist = new TH1F("hist", " ", 100, 0.048, 0.052);
+
+	// 	for (int j=0; j<NCH; j++) {
+	// 		if(j==channel){
+
+	// 			double basenostra =0; 
+	// 			for (int entry=0; entry<nEntries ; entry++) {
+	// 				tree->GetEntry(entry);
+	// 				float sum=0;
+
+	// 				min->Fill(vcharge[j]); //to assess if there is an physical event
+
+
+	// 				for(int i=0; i<BMAX; i++){
+	// 					basenostra+=pshape[j][i];
+	// 				}
+
+	// 				basenostra/=BMAX;
+	//        //diffbaseline->Fill(basenostra-base[channel]);
+
+	// 				for (int i=BMAX; i<1024; i++) {
+	// 					sum+=pshape[j][i]-base[j];
+	// 				}
+
+	// 				rapporto = sum*DT/vcharge[j];
+
+	// 				if(vcharge[j] < -vmin) {
+	// 					if(j==channel){
+	// 						hist->Fill(rapporto);
+	// 						diffbaseline->Fill((basenostra-base[j])*(1024)/(sum*DT));      
+	// 					}
+	// 					else {
+	// 						others->Fill(rapporto);
+	// 					}
+
+	// 				}
+
+	// 			}
+	// 		}
+	// 	}
+
+    //    	Double_t norm = hist->GetEntries();  //QUA ANDREBBE GETMAXIMUM
+    //    	hist->Scale(1./norm);
+    //    	norm = others->GetEntries();
+    //    	others->Scale(1./norm);
+
+    // 	TCanvas* c1 = new TCanvas("c1",Form("Istogramma rapporti con carica canale %d vs altri", channel),600,800); // Nome, Titolo,x,y
+  		// c1->cd(); // Apre una sessione
+  		// hist->SetLineColor(2);
+  		// others->SetLineColor(4);
+  		// hist->SetXTitle("I/C");
+  		// hist->SetYTitle("N eventi");
+  		// hist->Draw("HIST"); // Disegna l'istogramma
+  		// others->Draw("SAME HIST");
+  		// c1->Update();
+  		// c1->SaveAs(Form("%s/hist_charge_%d.pdf", plotsDir.c_str(),channel));
+
+
+
+	std::vector<double> means;
+	std::vector<double> err_means;
+	std::vector<double> x;
+
+	
+	for (int j=0; j<NCH; j++) {
+	  
+	  TH1F* hist = new TH1F("hist", " ", 100, 0.048, 0.052); // rapporto integrale/carica
+	  double basenostra =0;
+	  
+	  for (int entry=0; entry<nEntries ; entry++) {
+	    
+	    tree->GetEntry(entry);
+	    
+	    float sum=0;
+	    
+	    min->Fill(vcharge[j]); //to assess if there is a physical event
+	    
+	    for(int i=0; i<BMAX; i++){
+	      basenostra+=pshape[j][i]; // media sui primi BMAX valori
+	    }
+	    basenostra/=BMAX;
+	    //diffbaseline->Fill(basenostra-base[channel]);
+	    
+	    for (int i=BMAX; i<1024; i++) {
+	      sum+=pshape[j][i]-base[j];
+	    }
+	    
+	    if(vcharge[j] < -vmin) {
+	      hist->Fill(sum*DT/vcharge[j]); // rapporto integrale/carica
+	      diffbaseline->Fill((basenostra-base[j])*(1024)/(sum*DT));  // confronto tra baseline    
+
+	    }
+	  }
+	  
+	  if(hist->GetEntries()>0) {
+	    means.push_back(hist->GetMean());
+	    err_means.push_back(hist->GetStdDev());
+	    x.push_back(j+1);
+	    
+	  }
+			    
+
+	  
+	  
+	}
+
+	/*int n=0;
+	for(int i=0; i<NCH; i++){
+		if(entries[i]>0){
+			means.push_back(charges[i]);
+			err_means.push_back(err_charges[i]);
+			x_new.push_back(x[i]);
+			n++;
+			}
+			}*/
+	
+
       }
       
       //rapporto = sum*DT/vcharge[channel];
@@ -153,24 +275,6 @@ int main(int argc, char* argv[]) {
     //delete c1;
     
     
+
   }
 
-  // per grafico somma/carica vs canale
-  
-  TCanvas* c2 = new TCanvas("c2", "Confronto Medie e Std Dev di R = Integrale/Carica ");
-  c2->cd();
-  TGraphErrors* gr=new TGraphErrors(NCH, channel_axis, charge_axis, err_channel, err_charge);
-  gr->SetTitle("Confronto Medie e Std Dev di R = Integrale / Charge; Canale ;Media di R = Integrale/Carica");
-  gr->SetMarkerStyle(21);
-  gr->SetMarkerSize(0.9);
-  gr->GetXaxis()->SetTitle("Canale");
-  gr->GetYaxis()->SetTitle("Rapporto Integrale del profilo/carica");
-  gr->Draw("AP");
-  c2->SaveAs(Form("%s/confronto_medie_e_DevStandard.pdf", plotsDir.c_str()));
-  
-  delete gr;
-  //delete c2;
- 
-  return 0;
-
-}
