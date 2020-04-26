@@ -27,10 +27,14 @@
 
 int main(int argc, char* argv[]) {
 
-	if (argc!=2) {
-		std::cout<<"Usage: "<<argv[0]<<" filename.root. \n Exiting."<<std::endl;
-		exit(ERROR_USAGE);
-	}
+  // Check usage
+  
+  if (argc!=2) {
+    std::cout<<"Usage: "<<argv[0]<<" filename.root. \n Exiting."<<std::endl;
+    exit(ERROR_USAGE);
+  }
+
+
 
   // file dove leggere il Tree
 
@@ -147,6 +151,7 @@ int main(int argc, char* argv[]) {
 	std::vector<double> means;
 	std::vector<double> err_means;
 	std::vector<double> x;
+
 	
 	for (int j=0; j<NCH; j++) {
 	  
@@ -200,124 +205,76 @@ int main(int argc, char* argv[]) {
 			}
 			}*/
 	
-	TCanvas* c2 = new TCanvas("c2", "Grafico Calibrazione");
-  	c2->cd();
-  	TGraphErrors* gr=new TGraphErrors(x.size(), &x[0], &means[0], err_x, &err_means[0]); // plot integrale/carica vs canale
-	TF1 *f = new TF1("f", "[0]"); // funzione costante
-	gr->Fit(f); // fit sul grafico
-	double_t chi2 = gr->Chisquare(f);
-	gr->GetXaxis()->SetTitle("Canale");
-  	gr->GetYaxis()->SetTitle("I/C Medio");
-  	gr->SetMarkerStyle(21);
-  	gr->SetMarkerSize(1.0);
-	gr->Draw("AP");
-  	c2->SaveAs(Form("%s/calibrazione.pdf", plotsDir.c_str()));
 
-  	std::cout<< " chi-square test returned a value of chi-suare/Ndof of " << " con "<< chi2/f->GetNDF()<<std::endl;
+      }
+      
+      //rapporto = sum*DT/vcharge[channel];
+      //if(rapporto>0.2 && vcharge[channel] < -vmin){std::cout<<channel<<" "<<entry<<" "<< vcharge[channel]<<" "<< sum*DT<<" "<<rapporto<<std::endl;}
+      //if(channel==9 && vcharge[channel] < -vmin){std::cout<<channel<<" "<<entry<<" "<< vcharge[channel]<<" "<< sum*DT<<" "<<rapporto<<std::endl;}
+      
+      
+      if(!signalOnly) hist->Fill(sum*DT/vcharge[channel]); // Se signalOnly=0 salva tutti gli eventi
+      else if(vcharge[channel] < -min_charge) hist->Fill(sum*DT/vcharge[channel]); // Altrimenti solo quelli con |carica|>min_charge
+      
+      charge->Fill(vcharge[channel]);
+      
+      if(vcharge[channel] < -min_charge){
+        hist->Fill(sum*DT/vcharge[channel]);
+      }
+      
+    }
+    
+    TCanvas* c1 = new TCanvas("c1","Istogramma Rapporti della Carica Misurata vs. Riportata",600,800); // Nome, Titolo,x,y
+    c1->cd();
+    hist->SetTitle("Istogramma Rapporti della Carica Misurata vs. Riportata");
+    hist->GetXaxis()->SetTitle("Rapporto della Carica Misurata vs. Riportata");
+    hist->GetYaxis()->SetTitle("Numero Eventi");
+    
+    TCanvas* c3 = new TCanvas("c2","Istogramma della",600,800); // Nome, Titolo,x,y
+    c3->cd();
+    charge->SetTitle("Istogramma della Carica");
+    charge->GetXaxis()->SetTitle("Carica");
+    charge->GetYaxis()->SetTitle("Numero Eventi");
 
-  	// TCanvas* ao1 = new TCanvas("c1","Istogramma Cariche ",600,800); // Nome, Titolo,x,y
-	// 	ao1->cd(); // Apre una sessione
- 	// 	ao1->SetLogy();
- 	// 	min->SetXTitle("charge");
- 	// 	min->SetYTitle("N eventi");
- 	//  min->Draw(); // Disegna l'istogramma
- 	//  ao1->SaveAs(Form("%s/hist_charge.pdf", plotsDir.c_str()));
-
-
-
-	// TCanvas* c3 = new TCanvas("c3","diff delle baseline",600,800); // Nome, Titolo,x,y
- //  	c3->cd(); // Apre una sessione
- //  	diffbaseline->Draw(); // Disegna l'istogramma
- //  	c3->SaveAs(Form("%s/diffbaseline.pdf", plotsDir.c_str()));
-
-
-//------------------------------------- PARTE su tutti i canali unico istogramma ---------------------------
-
-
-
-
- //  	TH1F* totale = new TH1F("totale", " ", 100, 0.043, 0.057);
- //  	for (int channel=0; channel<NCH; channel++) {
-
- //  		for (int entry=0; entry<nEntries ; entry++) {
-
- //  			tree->GetEntry(entry);
- //  			float sum=0;
-
- //  			for (int i=0; i<1024; i++) {
- //  				sum+=pshape[channel][i]-base[channel];
- //  			}
-
- //  			rapporto = sum*=DT/vcharge[channel];
-
- //  			if(vcharge[channel] < -vmin) totale->Fill(rapporto);    
- //  		}
- //  	}
-
- //  	double s = totale->GetStdDev();
- //  	std::cout<<s<<std::endl;
-
-
-	// TCanvas* ao = new TCanvas("c1","Istogramma rapporti con carica",600,800); // Nome, Titolo,x,y
- // 	ao->cd(); // Apre una sessione
- // 	ao->SetLogy();
- // 	totale->SetXTitle("I/C");
- // 	totale->SetYTitle("N eventi");
- //  	totale->Draw(); // Disegna l'istogramma
- //  	ao->SaveAs(Form("%s/hist_charge_totale.pdf", plotsDir.c_str()));
-
-
- //  	delete ao;
-
-
-//------------------------------------------------- PARTE media sui singoli canali -----------------------------------------
-
-
-  	// Double_t sigma[NCH]={0.};
-  	// Double_t medie[NCH]={0.};
-
-  	// double M = totale->GetMean();
-
-  	// for(int i =0; i<NCH; i++){
-  	// 	if(entries[i]!=0){
-  	// 		sigma[i]= 2*s/sqrt(entries[i]);
-  	// 	}
-  	// 	else charges[i]=M;
-  	// 	medie[i] = M;
-  	// }
-
-
-
-  	// TCanvas* c2 = new TCanvas("c2", "Grafico Calibrazione");
-  	// c2->cd();
-  	// TMultiGraph *mg = new TMultiGraph();
-  	// TGraphErrors* gr=new TGraphErrors(NCH, x, medie, err_x, sigma);
-  	// gr->GetXaxis()->SetTitle("Canale");
-  	// gr->GetYaxis()->SetTitle("I/C Medio");
-  	// gr->SetMarkerStyle(21);
-  	// gr->SetMarkerSize(1.0);
-  	// TGraphErrors* gr1=new TGraphErrors(NCH, x, charges, err_x, err_x);
-  	// gr1->SetMarkerColorAlpha(kRed, 1);
-  	// gr1->SetMarkerStyle(20);
-
-  	// mg->Add(gr1);
-  	// mg->Add(gr);
-  	// mg->Draw("AP");
-
-
-  // 	TLatex l;
-  // 	l.SetTextSize(0.025);
-  // 	l.SetTextAngle(30.);
-  // 	l.DrawLatex(13,0.074,Form("R_avg = %f",sum));
-  // 	l.DrawLatex(13,0.072,Form("R_avg_err = %f",err));
-  	// c2->SaveAs(Form("%s/calibrazione.pdf", plotsDir.c_str()));
-
-  	delete gr;
-  	//delete gr1;
-  	delete c2;
-  	//delete totale;
-
-
+    // Apre una sessione
+    hist->Draw(); // Disegna l'istogramma
+    c1->SaveAs(Form("%s/hist_charge_%d_ratio.pdf", plotsDir.c_str(),channel));
+    
+    charge->Draw();
+    c3->SaveAs(Form("%s/his_charge_%d.pdf", plotsDir.c_str(),channel));
+    
+    
+    channel_axis[channel]=channel+1;
+    charge_axis[channel]=hist->GetMean();
+    err_charge[channel]=hist->GetStdDev();
+    
+    
+    delete hist;
+    delete charge;
+    //delete c1, c3;
+    
+    
+    // per gli istogrammi
+    
+    TCanvas* c2 = new TCanvas("c1","Istogramma Rapporti della Carica Misurata vs. Riportata",600,800); // Nome, Titolo,x,y
+    c2->cd();
+    hist->SetTitle("Istogramma Rapporti della Carica Misurata vs. Riportata");
+    hist->GetXaxis()->SetTitle("Rapporto della Carica Misurata vs. Riportata");
+    hist->GetYaxis()->SetTitle("Numero Eventi");
+    hist->Draw();
+    c2->SaveAs(Form("%s/hist_charge_%d.pdf", plotsDir.c_str(),channel));
+    
+    // salva variabili per grafico somma/carica vs canale
+    
+    channel_axis[channel]=channel+1; // grazie:)
+    charge_axis[channel]=hist->GetMean();
+    err_charge[channel]=hist->GetStdDev();
+    
+    
+    delete hist;
+    //delete c1;
+    
+    
 
   }
 

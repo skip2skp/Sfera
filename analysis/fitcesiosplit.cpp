@@ -1,6 +1,10 @@
 // Lorenzo & Andrea 
-// versione 11/04/20
-//Questo programma controlla se c'è una dipendenza tra lo spostamento del picco del cesio all' aumentare delle funzioni aggiunte al fit
+
+// versione 22/04/20
+//Questo programma può:
+// - controllare se c'è una dipendenza tra lo spostamento del picco del cesio all' aumentare delle funzioni aggiunte al fit
+// fittare sia i dati "pari" e "quelli dispari separatamente "
+
 //0 : stampa solo gaussiana
 //1 : stampa G+FD ;risultati G e G+FD
 //2 : stampa G+FD+FD ;risultati G G+FD G+FD+FD
@@ -23,6 +27,7 @@
 #include<vector>
 #include<cmath>
 #include<fstream>
+#include<iomanip>
 
 #include"TFile.h"
 #include"TTree.h"
@@ -35,53 +40,39 @@
 #include"TCanvas.h"
 #include"TGraphErrors.h"
 
-
 Double_t fermiDirac(Double_t *x, Double_t *par) {
 
 	return par[0]/(1+exp((x[0]-par[1])*par[2])); // NB par[0] = ampiezza, par[1]="potenziale chimico", par[2]=1/"temperatura"
 
 }
 
-Double_t retta(Double_t *x, Double_t *par) {
-
-	return par[0]+x[0]*par[1];
-
-}
-
-Double_t back(Double_t *x,Double_t *par){
+/*Double_t back(Double_t *x,Double_t *par){
 
 return par[0]*exp(par[1]*(par[2]-x[0]));
 
-}
+}*/
 
 Double_t background(Double_t *x, Double_t *par) {
-
-  return par[0] + x[0]*par[1] + x[0]*x[0]*par[2];// + x[0]*x[0]*x[0]*par[3];
-
-  
+  return par[0] + x[0]*par[1] + x[0]*x[0]*par[2]; //+ x[0]*x[0]*x[0]*par[3];
 }
 
 Double_t fitFunc(Double_t *x, Double_t *par) { 
   return fermiDirac(x, &par[3])+ par[0]*TMath::Gaus(x[0], par[1], par[2]);
-
 }
 
 Double_t fitFunc1(Double_t *x, Double_t *par) { 
   return fermiDirac(x, &par[3]) + fermiDirac(x, &par[6]) + par[0]*TMath::Gaus(x[0], par[1], par[2]);
-
 }
 
 Double_t fitFunc2(Double_t *x, Double_t *par) { 
   return fermiDirac(x, &par[3]) + fermiDirac(x, &par[6]) + par[0]*TMath::Gaus(x[0], par[1], par[2])+background(x,&par[9]);
-
 }
 
-Double_t fitFunc3(Double_t *x, Double_t *par) { 
+/*Double_t fitFunc3(Double_t *x, Double_t *par) { 
  
  return fermiDirac(x, &par[3]) + fermiDirac(x, &par[6]) + par[0]*TMath::Gaus(x[0], par[1], par[2])+back(x,&par[9]);
  
-}
-
+}*/
 
 int main(int argc, char* argv[]) {
 int scelta=atoi(argv[2]);
@@ -138,23 +129,29 @@ if(scelta1==1) split=0.5;
   std::ofstream out_even;
 	std::ofstream out_odd;  
 	out_dat.open("spettro_Cesio/risultati.txt");
+  out_dat << std::fixed;
+  out_dat << std::setprecision(4);
+
   if(split!=1) {
 	  out_odd.open("spettro_Cesio/odd.txt");  
 	  out_even.open("spettro_Cesio/even.txt");  
   }
 
-  
+  out_even << std::setprecision(4);
+  out_odd << std::setprecision(4);
+
+  out_dat <<"\n#Tipo_fit  Ampiezza  Media  Errore_media  Varianza  Errore_varianza  chiquadro_ridotto  Gradi di libertà" << std::endl;
 
   double xmin[NCH] = {950, 650, 650, 750, 850, 800, 700, 750, 700, 700, 900, 950, 700, 800, 770, 750};
 
-
+  double_t PS[12];
 
 
 /***********************************BEGIN FIT AND K CALC*********************************************************************************/
 
   for (int channel=0; channel<NCH; channel++) {  
     TH1F* spettro = new TH1F("spettro",Form("Spettro Cesio [Ch: %d]", channel), NBIN, NMIN, NMAX);
-		  int parity=0;
+		int parity=0;
 
 		while(parity<2){      
 		
@@ -170,13 +167,27 @@ if(scelta<=4){
     TF1 *fitgaus1 = new TF1("fitgaus1", "gaus", xmin[channel], NMAX); //fit gaussiana 1
 					
     TFitResultPtr gaussian_fit = spettro->Fit("fitgaus1", "SRQ");  //“Q” Quiet mode  “S” result in TFitResultPtr ""R” Use the range 
-		Double_t Gamp1 =gaussian_fit->Parameter(0);	
+  
+		//Double_t Gamp1 =gaussian_fit->Parameter(0);	
 		Double_t Gmean1 =gaussian_fit->Parameter(1);
+		/*Double_t Gvar1 =gaussian_fit->Parameter(2);
+		Double_t chi1 =gaussian_fit->Chi2();		
+		Double_t Ndf1=gaussian_fit->Ndf();
+    Double_t Gmean1err=gaussian_fit->ParError(1);
+    Double_t Gvar1err=gaussian_fit->ParError(2);*/							
+		
+    fitgaus1->SetRange(Gmean1-100, Gmean1+100);
+
+    gaussian_fit = spettro->Fit("fitgaus1", "SRQ");  //“Q” Quiet mode  “S” result in TFitResultPtr ""R” Use the range 
+		Double_t Gamp1 =gaussian_fit->Parameter(0);	
+		Gmean1 =gaussian_fit->Parameter(1);
 		Double_t Gvar1 =gaussian_fit->Parameter(2);
 		Double_t chi1 =gaussian_fit->Chi2();		
-		Double_t Ndf1=gaussian_fit->Ndf();							
-		out_dat<<"CH["<<channel<<"]"<<std::endl;		
-		out_dat<<"G\t"<< Gamp1<<"\t"<<Gmean1<<"\t"<<Gvar1<<"\t"<<"chisq:"<<chi1<<"\t"<<Ndf1<<std::endl;
+		Double_t Ndf1=gaussian_fit->Ndf();
+    Double_t Gmean1err=gaussian_fit->ParError(1);
+    Double_t Gvar1err=gaussian_fit->ParError(2);
+    out_dat<<"#CH["<<channel<<"]"<<std::endl;		
+		out_dat<< Gamp1 <<"\t"<<Gmean1<<"\t"<< Gmean1err <<"\t"<<Gvar1<<"\t"<<Gvar1err<<"\t"<<chi1/Ndf1<<"\t"<<Ndf1<<std::endl;
 
 		
 		
@@ -197,12 +208,20 @@ if(scelta>=1){
 		Double_t Gmean2 =fit_result_1->Parameter(1);
 		Double_t Gvar2 =fit_result_1->Parameter(2);	
 		Double_t chi2 =fit_result_1->Chi2();		
-		Double_t Ndf2=fit_result_1->Ndf();														
-		out_dat<<"G+FD\t"<< Gamp2<<"\t"<<Gmean2<<"\t"<<Gvar2<<"\t"<<"chisq:"<<chi2<<"\t"<<Ndf2<<std::endl;
-		out_dat<<"PK2/PK1="<<Gmean2/Gmean1<<std::endl;
-	     }
+		Double_t Ndf2=fit_result_1->Ndf();
+    Double_t Gmean2err=fit_result_1->ParError(1);
+    Double_t Gvar2err=fit_result_1->ParError(2);														
+		out_dat<< Gamp2 <<"\t"<<Gmean2<<"\t"<< Gmean2err <<"\t"<<Gvar2<<"\t"<<Gvar2err<<"\t"<<chi2/Ndf2<<"\t"<<Ndf2<<std::endl;
+		out_dat<<"#PK2/PK1="<<Gmean2/Gmean1<<std::endl;
+
+    
+
+	}
+
+
 if(scelta>=2){
-		//*****************II fit gauss+FD+FD**********************************************************
+		//*****************III fit gauss+FD+FD**********************************************************
+
     TF1* rootfitFunc2 = new TF1("rootfitFunc2", fitFunc1, FIT_START, NMAX,9);
      
     rootfitFunc2->SetParameter(0,Gamp1);
@@ -220,13 +239,19 @@ if(scelta>=2){
 		Double_t Gmean3 =fit_result_2->Parameter(1);
 		Double_t Gvar3 =fit_result_2->Parameter(2);	
 		Double_t chi3 =fit_result_2->Chi2();		
-		Double_t Ndf3=fit_result_2->Ndf();														
-		out_dat<<"G+FD+FD\t"<< Gamp3<<"\t"<<Gmean3<<"\t"<<Gvar3<<"\t"<<"chisq:"<<chi3<<"\t"<<Ndf3<<std::endl;
-	    out_dat<<"PK3/PK1="<<Gmean3/Gmean1<<std::endl;
+		Double_t Ndf3=fit_result_2->Ndf();
+    Double_t Gmean3err=fit_result_2->ParError(1);
+    Double_t Gvar3err=fit_result_2->ParError(2);														
+		out_dat<< Gamp3 <<"\t"<<Gmean3<<"\t"<< Gmean3err <<"\t"<<Gvar3<<"\t"<<Gvar3err<<"\t"<<chi3/Ndf3<<"\t"<<Ndf3<<std::endl;
+	  out_dat<<"#PK3/PK1="<<Gmean3/Gmean1<<std::endl;
+    
 
-			}
+	}
+
+
 if(scelta>=3){
-		//*****************III fit gauss+FD+FD+BG(lin-IIorder)**********************************************************
+		//*****************IV fit gauss+FD+FD+BG(lin-IIorder)**********************************************************
+
     TF1* rootfitFunc3= new TF1("rootfitFunc3", fitFunc2, FIT_START, NMAX, 12);
       
     rootfitFunc3->SetParameter(0,Gamp1);
@@ -241,6 +266,9 @@ if(scelta>=3){
 		rootfitFunc3->SetParameter(9,0);
     rootfitFunc3->SetParameter(10,0);
     rootfitFunc3->SetParameter(11,0);
+    //rootfitFunc3->SetParameter(12,0);
+
+
 
     TFitResultPtr fit_result_3=spettro->Fit("rootfitFunc3", "SQR");
 		Double_t Gamp4 =fit_result_3->Parameter(0);	
@@ -248,13 +276,17 @@ if(scelta>=3){
 		Double_t Gvar4 =fit_result_3->Parameter(2);	
 		Double_t chi4 =fit_result_3->Chi2();		
 		Double_t Ndf4=fit_result_3->Ndf();
-		Double_t Gmean4err=fit_result_3->ParError(1);														
-		out_dat<<"G+FD+FD+BG\t"<< Gamp4<<"\t"<<Gmean4<<"\t"<<Gvar4<<"\t"<<"chisq:"<<chi4<<"\t"<<Ndf4<<std::endl;
-		 out_dat<<"PK4/PK1="<<Gmean4/Gmean1<<std::endl;
-		
+		Double_t Gmean4err=fit_result_3->ParError(1);
+    Double_t Gvar4err=fit_result_3->ParError(2);														
+		out_dat<< Gamp4 <<"\t"<<Gmean4<<"\t"<< Gmean4err <<"\t"<<Gvar4<<"\t"<<Gvar4err<<"\t"<<chi4/Ndf4<<"\t"<<Ndf4<<std::endl;
+		out_dat<<"#PK4/PK1="<<Gmean4/Gmean1<<std::endl;
+		rootfitFunc3->GetParameters(PS);
+				
 		if(split!=1) {
-      if(parity==0) out_even<<Gmean4<<"\t"<<Gmean4err<<std::endl;
-		  else        	out_odd<<Gmean4<<"\t"<<Gmean4err<<std::endl;
+      float a;
+      a = (Gmean4-Gmean1)/2;
+      if(parity==0) out_even<<Gmean4<<"  "<<Gmean4err<<"  "<<a<<"  "<<sqrt((Gmean4err*Gmean4err) + a*a)<<std::endl;
+		  else        	out_odd<<Gmean4<<"  "<<Gmean4err<<"  "<<a<<"  "<<sqrt((Gmean4err*Gmean4err) + a*a)<<std::endl;
     }
 
 	  //out_dat<<"**"<<std::endl;
@@ -292,25 +324,49 @@ if(scelta>=3){
 		
  out_dat<<"-------------------------------------------------------"<<std::endl;
   
-
+	TF1* fgaus = new TF1("fgaus","gaus",FIT_START, NMAX);
+	TF1* fback = new TF1("fgaus",background,FIT_START, NMAX,3);
+	TF1* fd1 = new TF1("fgaus",fermiDirac,FIT_START, NMAX,3);
+	TF1* fd2 = new TF1("fgaus",fermiDirac,FIT_START, NMAX,3);	
+	fgaus->SetLineColor(kBlack);
+	fback->SetLineColor(kBlue);
+	fd1->SetLineColor(kGreen);
+	fd2->SetLineColor(kOrange);
+  fgaus->SetParameter(0,PS[0]);
+  fgaus->SetParameter(1,PS[1]);
+  fgaus->SetParameter(2,PS[2]);
+	fd1->SetParameter(0,PS[3]);
+	fd1->SetParameter(1,PS[4]);
+	fd1->SetParameter(2,PS[5]);
+	fd2->SetParameter(0,PS[6]);
+	fd2->SetParameter(1,PS[7]);
+	fd2->SetParameter(2,PS[8]);
+	fback->SetParameter(0,PS[9]);
+	fback->SetParameter(1,PS[10]);
+	fback->SetParameter(2,PS[11]);
+  //fback->SetParameter(3,PS[12]);
 
 
       
   //Stampiamo  tutto
    TCanvas* plot_spettro = new TCanvas("spettro",Form("Spettro Cesio [Ch: %d]", channel),1920,1080);
-   spettro->SetTitle(Form("Spettro Cesio [Ch: %d];Energia (MeV);Numero Eventi",channel));
-   plot_spettro -> cd(); // Apre una sessione
-    spettro -> Draw(); // Disegna l'istogramma
-    plot_spettro -> SaveAs(Form("%s/Ist_Spettro_Cs_%d.pdf", plotsDir.c_str(),channel));
-      
-      
-    
-          delete plot_spettro;
-      
 
-	if(split!=1) parity++;
-  else parity = 2;
- }//while
+	 spettro->SetTitle(Form("Spettro Cesio [Ch: %d];Carica (pC);Numero Eventi",channel));
+	 plot_spettro -> cd(); // Apre una sessione
+   spettro -> Draw(); // Disegna l'istogramma
+	
+    fgaus->Draw("same");
+		fd1->Draw("same");
+	  fd2->Draw("same");
+    fback->Draw("same");
+		plot_spettro -> SaveAs(Form("%s/Ist_Spettro_Cs_%d.pdf", plotsDir.c_str(),channel));
+
+    delete plot_spettro;
+      
+	  parity+=2*split;
+  
+
+    }//while
       
     delete spettro;
     

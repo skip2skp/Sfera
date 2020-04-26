@@ -23,17 +23,23 @@ checkPulseShape: checkPulseShape.cpp
 makeSpectrum: makeSpectrum.cpp
 	$(CC) -Wall $(INCLUDES) -o makeSpectrum makeSpectrum.cpp $(ROOTFLAG) $(EXTRALIBS)
 
-checkCharge: checkCharge.cpp
+make checkCharge: checkCharge.cpp
 	$(CC) -Wall $(INCLUDES) -o checkCharge checkCharge.cpp $(ROOTFLAG) $(EXTRALIBS)
 
-calibrazione_energia: calibrazione_energia.cpp
-	$(CC) -Wall $(INCLUDES) -o calibrazione_energia calibrazione_energia.cpp $(ROOTFLAG) $(EXTRALIBS)
+make calibrazione_energia_new1: calibrazione_energia_new1.cpp
+	$(CC) -Wall $(INCLUDES) -o calibrazione_energia_new1 calibrazione_energia_new1.cpp $(ROOTFLAG) $(EXTRALIBS)
+
+make fitcesio: fitcesio.cpp
+	$(CC) -Wall $(INCLUDES) -o fitcesio fitcesio.cpp $(ROOTFLAG) $(EXTRALIBS)
+
+make fitcesiosplit: fitcesiosplit.cpp
+	$(CC) -Wall $(INCLUDES) -o fitcesiosplit fitcesiosplit.cpp $(ROOTFLAG) $(EXTRALIBS)
 
 
-all: asciiToTree checkPulseShape measToTree makeSpectrum checkCharge calibrazione_energia
+all: asciiToTree checkPulseShape measToTree makeSpectrum checkCharge calibrazione_energia fitcesio fitcesiosplit
 
 
 clean:
-	rm asciiToTree checkPulseShape measToTree makeSpectrum checkCharge calibrazione_energia
+	rm asciiToTree checkPulseShape measToTree makeSpectrum checkCharge calibrazione_energia fitcesio fitcesiosplit
 
 
