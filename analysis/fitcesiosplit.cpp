@@ -1,14 +1,21 @@
-// Lorenzo & Andrea 
+// Lorenzo & Andrea & stefano
 
-// versione 22/04/20
+// versione 26/04/20
 //Questo programma può:
 // - controllare se c'è una dipendenza tra lo spostamento del picco del cesio all' aumentare delle funzioni aggiunte al fit
 // fittare sia i dati "pari" e "quelli dispari separatamente "
 
+//<<<<<<<<<<<<<<<Primo valore da inserire in terminale>>>>>>>>>>>>>>>
 //0 : stampa solo gaussiana
 //1 : stampa G+FD ;risultati G e G+FD
 //2 : stampa G+FD+FD ;risultati G G+FD G+FD+FD
 //3 : stampa G+FD+FD+BKLIN ;risultati G G+FD G+FD+FD G+FD+FD++BKLIN
+//<<<<<<<<<<<<<<<secondo valore da inserire in terminale>>>>>>>>>>>>>>>
+// 0 : usa tutti i dati
+// 1 : divide i dati pari e dispari
+//<<<<<<<<<<<<<<<Terzo valore da inserire in terminale>>>>>>>>>>>>>>>>
+// 0 : output grafici clean
+// 1 : output grafici con funzioni del fit   (attenzione valido solo con primo valore =3!!)
 
 #define ERROR_USAGE 1
 #define ERROR_NOTREE 2
@@ -39,6 +46,12 @@
 #include"TFitResultPtr.h"
 #include"TCanvas.h"
 #include"TGraphErrors.h"
+#include "TLegend.h"
+#include "TGaxis.h"
+#include "TStyle.h"
+#include "TPaveStats.h"
+#include "TPaveText.h"
+#include "TLatex.h"
 
 Double_t fermiDirac(Double_t *x, Double_t *par) {
 
@@ -77,11 +90,22 @@ Double_t fitFunc2(Double_t *x, Double_t *par) {
 int main(int argc, char* argv[]) {
 int scelta=atoi(argv[2]);
 int scelta1=atoi(argv[3]);
+int scelta2=atoi(argv[4]);
 //int scelta2=atoi(arv[4]);
   //richieste in terminale
-  if (argc!=4 && scelta<4) {
-    std::cout<<"Usage: "<<argv[0]<<" filename.root.\t type fit  \n Exiting."<<std::endl;
-		std::cout<<"1 G \t2 G+FD \t3 G+FD+FD\t4 G+FD+FD+BKLIN "<<std::endl;
+  if (argc!=5 || scelta>3 || scelta1>1 || scelta2>1  ) {
+    std::cout<<"Usage: "<<argv[0]<<" filename.root.\t type fit \t split \t printfunction \n Exiting."<<std::endl;
+		
+std::cout<<	"<<<<<<<<<<<<<<<Primo valore da inserire in terminale>>>>>>>>>>>>>>>"<<std::endl;
+std::cout<<"0 : stampa solo gaussiana"<<std::endl;
+std::cout<<"1 : stampa G+FD ;risultati G e G+FD"<<std::endl;
+std::cout<<"3 : stampa G+FD+FD+BKLIN ;risultati G G+FD G+FD+FD G+FD+FD++BKLIN"<<std::endl;
+std::cout<<"<<<<<<<<<<<<<<<secondo valore da inserire in terminale>>>>>>>>>>>>>>>"<<std::endl;
+std::cout<<"0 : usa tutti i dati"<<std::endl;
+std::cout<<"1 : divide i dati pari e dispari"<<std::endl;
+std::cout<<"<<<<<<<<<<<<<<<Terzo valore da inserire in terminale>>>>>>>>>>>>>>>>"<<std::endl;
+std::cout<<"0 : output grafici clean"<<std::endl;
+std::cout<<"1 : output grafici con funzioni del fit   (attenzione valido solo con primo valore =3!!)"<<std::endl;
     exit(ERROR_USAGE);
   }
 
@@ -150,7 +174,9 @@ if(scelta1==1) split=0.5;
 /***********************************BEGIN FIT AND K CALC*********************************************************************************/
 
   for (int channel=0; channel<NCH; channel++) {  
-    TH1F* spettro = new TH1F("spettro",Form("Spettro Cesio [Ch: %d]", channel), NBIN, NMIN, NMAX);
+    //TH1F* spettro = new TH1F("spettro",Form("Spettro Cesio [Ch: %d]", channel), NBIN, NMIN, NMAX);
+			TH1F* spettro = new TH1F("spettro","", NBIN, NMIN, NMAX);
+				
 		int parity=0;
 
 		while(parity<2){      
@@ -320,10 +346,10 @@ if(scelta>=3){
 }
 	*/
 
-
+	
 		
  out_dat<<"-------------------------------------------------------"<<std::endl;
-  
+  if(scelta1==0){
 	TF1* fgaus = new TF1("fgaus","gaus",FIT_START, NMAX);
 	TF1* fback = new TF1("fgaus",background,FIT_START, NMAX,3);
 	TF1* fd1 = new TF1("fgaus",fermiDirac,FIT_START, NMAX,3);
@@ -349,24 +375,42 @@ if(scelta>=3){
 
       
   //Stampiamo  tutto
-   TCanvas* plot_spettro = new TCanvas("spettro",Form("Spettro Cesio [Ch: %d]", channel),1920,1080);
-
-	 spettro->SetTitle(Form("Spettro Cesio [Ch: %d];Carica (pC);Numero Eventi",channel));
+   TCanvas* plot_spettro = new TCanvas("spettro","",1920,1080);
+    spettro->SetStats(0); // Leva il pannello con entries mean devstd
+	// spettro->SetTitle(Form("Spettro Cesio [Ch: %d];Carica (pC);Numero Eventi",channel));
+	 spettro->GetYaxis()->SetTitle("Numero Eventi");
+	 spettro->GetXaxis()->SetTitle("Carica [pC]");
 	 plot_spettro -> cd(); // Apre una sessione
+	
+
    spettro -> Draw(); // Disegna l'istogramma
 	
+ TLatex *l = new TLatex(0.85,0.87,Form( "ch[%d]",channel));
+l->SetNDC();
+l->SetTextSize(0.04);
+l->Draw("same");
+
+	if(scelta2==1){    //stampa i grafici delle funzioni del fit solo se si fa il fit con tutte le funzioni e su tutti i dati
     fgaus->Draw("same");
 		fd1->Draw("same");
 	  fd2->Draw("same");
     fback->Draw("same");
-		plot_spettro -> SaveAs(Form("%s/Ist_Spettro_Cs_%d.pdf", plotsDir.c_str(),channel));
+		};
+		
+	plot_spettro -> SaveAs(Form("%s/Ist_Spettro_Cs_%d.pdf", plotsDir.c_str(),channel));
 
     delete plot_spettro;
       
-	  parity+=2*split;
-  
 
-    }//while
+  
+		}//if per stampa
+	else { 
+	if(parity==1)std::cout<<"doing ch["<<channel<<"] even "<<std::endl;
+	else std::cout<<"doing ch["<<channel<<"] odd"<<std::endl;}
+	  
+	parity+=2*split;
+
+    };//while
       
     delete spettro;
     
