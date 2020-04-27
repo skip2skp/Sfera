@@ -25,7 +25,7 @@
 #define CMIN 50
 #define NMIN 0
 #define NMAX 1200
-#define FIT_START 350
+#define FIT_START 300
 #define NBIN 100
 #define MEDIA 661.7
 
@@ -66,7 +66,7 @@ return par[0]*exp(par[1]*(par[2]-x[0]));
 }*/
 
 Double_t background(Double_t *x, Double_t *par) {
-  return par[0] + x[0]*par[1] + x[0]*x[0]*par[2]; //+ x[0]*x[0]*x[0]*par[3];
+  return par[0]; //+ x[0]*par[1] + x[0]*x[0]*par[2]; //+ x[0]*x[0]*x[0]*par[3];
 }
 
 Double_t fitFunc(Double_t *x, Double_t *par) { 
@@ -278,25 +278,33 @@ if(scelta>=2){
 if(scelta>=3){
 		//*****************IV fit gauss+FD+FD+BG(lin-IIorder)**********************************************************
 
-    TF1* rootfitFunc3= new TF1("rootfitFunc3", fitFunc2, FIT_START, NMAX, 12);
-      
+    TF1* rootfitFunc3= new TF1("rootfitFunc3", fitFunc2, FIT_START, NMAX, 10);
+    
+    rootfitFunc3->SetParLimits(4, FIT_START, Gmean1);
+    rootfitFunc3->SetParLimits(7, FIT_START, Gmean1);
+    rootfitFunc3->SetParLimits(5, 0.002, 0.1);
+    rootfitFunc3->SetParLimits(8, 0.002, 0.1);
+    rootfitFunc3->SetParLimits(9, 0, 20);
+    
+
     rootfitFunc3->SetParameter(0,Gamp1);
     rootfitFunc3->SetParameter(1,Gmean1);
     rootfitFunc3->SetParameter(2,Gvar1);
 		rootfitFunc3->SetParameter(3,300);
     rootfitFunc3->SetParameter(4,300);
-    rootfitFunc3->SetParameter(5,0.01);
+    rootfitFunc3->SetParameter(5,0.02);
     rootfitFunc3->SetParameter(6,200);
     rootfitFunc3->SetParameter(7,200);
-    rootfitFunc3->SetParameter(8,0.03);
-		rootfitFunc3->SetParameter(9,0);
-    rootfitFunc3->SetParameter(10,0);
-    rootfitFunc3->SetParameter(11,0);
+    rootfitFunc3->SetParameter(8,0.02);
+		rootfitFunc3->SetParameter(9,6);
+    //rootfitFunc3->SetParameter(10,6);
+    //rootfitFunc3->SetParameter(11,0);
     //rootfitFunc3->SetParameter(12,0);
 
+    
 
 
-    TFitResultPtr fit_result_3=spettro->Fit("rootfitFunc3", "SQR");
+    TFitResultPtr fit_result_3=spettro->Fit("rootfitFunc3", "SQRB");
 		Double_t Gamp4 =fit_result_3->Parameter(0);	
 		Double_t Gmean4 =fit_result_3->Parameter(1);
 		Double_t Gvar4 =fit_result_3->Parameter(2);	
