@@ -26,8 +26,12 @@ makeSpectrum: makeSpectrum.cpp
 make checkCharge: checkCharge.cpp
 	$(CC) -Wall $(INCLUDES) -o checkCharge checkCharge.cpp $(ROOTFLAG) $(EXTRALIBS)
 
-make calibrazione_energia_new1: calibrazione_energia_new1.cpp
-	$(CC) -Wall $(INCLUDES) -o calibrazione_energia_new1 calibrazione_energia_new1.cpp $(ROOTFLAG) $(EXTRALIBS)
+checkCharge_finale: checkCharge_finale.cpp
+	$(CC) -Wall $(INCLUDES) -o checkCharge_finale checkCharge_finale.cpp $(ROOTFLAG) $(EXTRALIBS)
+
+calibrazione_energia_finale: calibrazione_energia_finale.cpp
+	$(CC) -Wall $(INCLUDES) -o calibrazione_energia_finale calibrazione_energia_finale.cpp $(ROOTFLAG) $(EXTRALIBS)
+
 
 make fitcesio: fitcesio.cpp
 	$(CC) -Wall $(INCLUDES) -o fitcesio fitcesio.cpp $(ROOTFLAG) $(EXTRALIBS)
