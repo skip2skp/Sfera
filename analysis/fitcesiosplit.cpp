@@ -195,19 +195,19 @@ int main(int argc, char* argv[]) {
     TFitResultPtr gaussian_fit = spettro->Fit("fitgaus1", "SRQ");  //“Q” Quiet mode  “S” result in TFitResultPtr ""R” Use the range 
     
 		//Double_t Gamp1 =gaussian_fit->Parameter(0);	
-    Double_t Gmean1 =gaussian_fit->Parameter(1);
-		/*Double_t Gvar1 =gaussian_fit->Parameter(2);
-		Double_t chi1 =gaussian_fit->Chi2();		
+   Double_t Gmean1 =gaussian_fit->Parameter(1);
+   	Double_t Gvar1 =gaussian_fit->Parameter(2);
+		/*Double_t chi1 =gaussian_fit->Chi2();		
 		Double_t Ndf1=gaussian_fit->Ndf();
     Double_t Gmean1err=gaussian_fit->ParError(1);
     Double_t Gvar1err=gaussian_fit->ParError(2);*/							
     
-    fitgaus1->SetRange(Gmean1-50, Gmean1+50);
+    fitgaus1->SetRange(Gmean1-Gvar1, Gmean1+2*Gvar1); // Set range of fit around the mean returned by the first. The range is asymmetrical, being larger on the right. 
 
     gaussian_fit = spettro->Fit("fitgaus1", "SRQ");  //“Q” Quiet mode  “S” result in TFitResultPtr ""R” Use the range 
     Double_t Gamp1 =gaussian_fit->Parameter(0);	
     Gmean1 =gaussian_fit->Parameter(1);
-    Double_t Gvar1 =gaussian_fit->Parameter(2);
+    Gvar1 =gaussian_fit->Parameter(2);
     Double_t chi1 =gaussian_fit->Chi2();		
     Double_t Ndf1=gaussian_fit->Ndf();
     Double_t Gmean1err=gaussian_fit->ParError(1);
