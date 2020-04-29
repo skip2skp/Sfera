@@ -5,7 +5,7 @@
 #define NCH 16
 #define DT 938E-3 // ns
 #define BMAX 20
-#define cmin -1000
+#define cmin -3000
 #define cmax -50
 
 
@@ -169,7 +169,6 @@ int main(int argc, char* argv[]) {
 			}
 
 			delete hist;
-
 		}
 
 		TCanvas* c2 = new TCanvas("c2", "Grafico Calibrazione");
@@ -178,6 +177,7 @@ int main(int argc, char* argv[]) {
 		TF1 *f = new TF1("f", "[0]"); // funzione costante
 		gr->Fit(f); // fit sul grafico
 		double_t chi2 = gr->Chisquare(f);
+		gr->SetTitle("");
 		gr->GetXaxis()->SetTitle("Canale");
 		gr->GetYaxis()->SetTitle("I/C Medio");
 		gr->SetMarkerStyle(21);
@@ -186,6 +186,9 @@ int main(int argc, char* argv[]) {
 		c2->SaveAs(Form("%s/calibrazione.pdf", plotsDir.c_str()));
 
 		std::cout<< "Chi2/Ndof = "<< chi2/f->GetNDF()<< std::endl;
+		TH1F* hist = new TH1F("hist", " ", 100, 0.048, 0.052); // rapporto integrale/carica
+
+		delete hist;
 
 		delete c2;
 
@@ -211,6 +214,7 @@ int main(int argc, char* argv[]) {
   		hist->SetLineColor(2);
   		hist->SetXTitle("Carica (pC)");
   		hist->SetYTitle("N eventi");
+  		hist->SetStats(0);
   		hist->Draw("HIST"); // Disegna l'istogramma
   		c3->SaveAs(Form("%s/istogramma_totale_cariche.pdf", plotsDir.c_str()));
 
@@ -253,6 +257,7 @@ int main(int argc, char* argv[]) {
   				c4->SetLogy();
   				hist_range->SetXTitle("Carica (pC)");
   				hist_range->SetYTitle("N eventi");
+  				hist_range->SetStats(0);
   				hist_range->Draw("HIST"); // Disegna l'istogramma
   				c4->SaveAs(Form("%s/istogramma_totale_cariche_range(%f,%f).pdf", plotsDir.c_str(), min, max));
 
@@ -300,7 +305,7 @@ int main(int argc, char* argv[]) {
 
   	}
 
-}
+  }
 
 
 

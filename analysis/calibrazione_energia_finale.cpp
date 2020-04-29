@@ -45,10 +45,14 @@ int main(int argc, char* argv[]) {
   double picco_FE_d[NCH]={0.};
   double inc_picco_FE_d[NCH]={0.};
   for(int i=0;i<NCH;i++){
-    efs >>picco_FE_p[i]>>inc_picco_FE_p[i];
+    double a=0;
+    double b=0;
+    efs >>picco_FE_p[i]>>a>>b>>inc_picco_FE_p[i];
   }
   for(int i=0;i<NCH;i++){
-    ofs >>picco_FE_d[i]>>inc_picco_FE_d[i];
+    double c=0;
+    double d=0;
+    ofs >>picco_FE_d[i]>>c>>d>>inc_picco_FE_d[i];
   }
 
 
@@ -220,6 +224,7 @@ int main(int argc, char* argv[]) {
   hist1->SetTitle(";Carica (pC);Numero Eventi");
   hist1->GetYaxis()->SetRangeUser(0,2500);
   H -> cd(); // Apre una sessione
+  hist1->SetStats(0);
   hist1 -> Draw();  
   hist2->SetLineColor(kRed);
   hist2 -> Draw("SAME");
@@ -232,6 +237,7 @@ int main(int argc, char* argv[]) {
   TCanvas* I = new TCanvas("hist1_scaled","Sovrapposizione Istogrammi Scalati"); // Nome, Titolo,x,y
   hist1_scaled->SetTitle(";Energia (MeV);Numero Eventi");
   hist1_scaled->GetYaxis()->SetRangeUser(0,2500);
+  hist1_scaled->SetStats(0);
   I -> cd(); // Apre una sessione
   hist1_scaled -> Draw();
   hist2_scaled->SetLineColor(kRed);
