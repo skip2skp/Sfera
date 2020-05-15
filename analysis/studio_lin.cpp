@@ -6,6 +6,8 @@
 #define NBIN 300
 
 #define NCH 16
+#define MODE_PEAKS 1
+#define MODE_LIN 2
 
 #include"TFile.h"
 #include"TTree.h"
@@ -29,28 +31,28 @@
 
 int main(int argc, char* argv[]) {
 
-	int NSOR;
-
-	std::cout<<"Quante sorgenti vuoi studiare?"<<std::endl;
-	std::cin >> NSOR;
+  //int NSOR;
+        int delimiter=atoi(":"); 
+	/*std::cout<<"Quante sorgenti vuoi studiare?"<<std::endl;
+	  std::cin >> NSOR;*/ // not necessary with this method i am implementing SP 15/05/2020
 	
-	int a;
-	int b;
-	int c;
+	int mode;
+	int draw_hist;
+	int analyze_linearity; //changed these names to something more understandable and defined precompiler variables with the modes in case we ever need to change and/or add new modes SP 15/05/2020
 	std::cout<<"Scegliere tra i seguenti studi:"<<std::endl;
-	std::cout<<"1. Studio picchi (se già conosci i range)"<<std::endl;
-	std::cout<<"2. Studio linearità (se già conosci i picchi & errori)"<<std::endl;
-	std::cin >> a;
+	std::cout<<MODE_PEAKS<<". Studio picchi (se già conosci i range)"<<std::endl;
+	std::cout<<MODE_LIN<<". Studio linearità (se già conosci i picchi & errori)"<<std::endl;
+	std::cin >> mode;
 	
-	if(a!=1 && a!=2){
+	while(mode!=MODE_PEAKS && mode!=MODE_LIN){ //changed if in while or it would only check this once SP 15/05/2020
 		std::cout<<"L'opzione selezionata non è valida, scegliere nuovamente tra le opzioni sopra."<<std::endl;
-		std::cin >> a;
+		std::cin >> mode;
 	}
 
-	if(a==1){
+	if(mode==MODE_PEAKS){
 
-		int ev[NSOR], entries[NSOR];
-		float base[NSOR][NCH], charge[NSOR][NCH];
+		int ev, entries;
+		float base[NCH], charge[NCH];
 		int npicchi;
 		double_t media;
 		double_t errore;
@@ -61,31 +63,38 @@ int main(int argc, char* argv[]) {
 		std::ifstream range ("range.txt", std::ifstream::in);		
 
 		std::cout<<"Premere 1 se si vuole stampare gli istogrammi, 0 altrimenti"<<std::endl;
-		std::cin>> b;
+		std::cin>> draw_hist;
 
-		if(b!=1 && b!=0){
+		while(draw_hist!=1 && draw_hist!=0){
 			std::cout<<"L'opzione selezionata non è valida, scegliere nuovamente tra le opzioni sopra."<<std::endl;
-			std::cin >> b;
+			std::cin >> draw_hist;
 		}
 
-		for(int i=0; i<NSOR; i++){
+		while(!range.eof()) {
 
-			TString rootFileName(argv[i+1]);
+		        TString rootFileName;
+			range.ignore(200, delimiter);
+			range>>rootFileName;
+			std::cout<<rootFileName<<std::endl; // CHECK
 			TFile* rootFile = new TFile(rootFileName);
-			std::cout<<"Reading data from root file "<<argv[i+1]<<std::endl;
+			std::cout<<"Reading data from root file "<<rootFileName<<std::endl;
 
 			TTree* tree = (TTree*) rootFile->Get("tree");
 			if(!tree) {
-				std::cout<<"Error, no tree called tree in "<<argv[i+1]<<". Exiting."<<std::endl;
+				std::cout<<"Error, no tree called tree in "<<rootFileName<<". Exiting."<<std::endl;
 				exit(ERROR_NOTREE);
 			}
 
-			tree->SetBranchAddress("ev", &ev[i]);
-			tree->SetBranchAddress("base", &base[i]);
-			tree->SetBranchAddress("vcharge", &charge[i]);
-			entries[i] = tree->GetEntries();
+			tree->SetBranchAddress("ev", &ev);
+			tree->SetBranchAddress("base", &base);
+			tree->SetBranchAddress("vcharge", &charge);
+			entries = tree->GetEntries();
+
+			std::string sourceName;
+			range.ignore(200, delimiter);
+			range>>sourceName;
  			
- 			range.ignore(200,' ');
+ 			range.ignore(200, delimiter);
 			range >> npicchi;
 
 			for(int k=0; k<npicchi;k++){
@@ -94,19 +103,19 @@ int main(int argc, char* argv[]) {
 
 					TH1F* hist = new TH1F("hist", " ", NBIN, CMIN, CMAX);
 
-					for (int entry=0; entry<entries[i] ; entry++) {
+					for (int entry=0; entry<entries; entry++) {
 						tree->GetEntry(entry);
-						hist->Fill(-charge[i][j]);
+						hist->Fill(-charge[j]);
 					}
 
 					// LEVA COMMENT
 					
 					double min, max;
- 					range.ignore(200,' ');
+ 					range.ignore(200, delimiter);
  					range>>min>>max;
 
-					if(b==1){
-						std::string sorgente = "source"+std::to_string(i+1);
+					if(draw_hist==1){
+						std::string sorgente = "source"+sourceName;
 						std::string plotsDir(Form("plot_lin/%s/", sorgente.c_str()));
 						system( Form("mkdir -p %s", plotsDir.c_str()));
 
@@ -117,7 +126,7 @@ int main(int argc, char* argv[]) {
   						hist->SetYTitle("N eventi");
   						hist->SetStats(0);
  						hist->Draw(); // Disegna l'istogramma
- 						c->SaveAs(Form("%s/istogramma_cariche_sor_%d_canale_%d.pdf", plotsDir.c_str(),i+1,j+1));
+ 						c->SaveAs(Form("%s/istogramma_cariche_sor_%s_canale_%d.pdf", plotsDir.c_str(),sourceName,j+1));
 
  						delete c;
  					}
@@ -133,23 +142,23 @@ int main(int argc, char* argv[]) {
    					}
    					else std::cout<<"Nessun picco"<<std::endl;
 
-   					std::cout<<"ev("<<i<<") "<<"ch("<<j<<") "<< "min "<< min<<"max "<<max <<"media "<<media<<std::endl; 
+   					std::cout<<"ev("<<sourceName<<") "<<"ch("<<j<<") "<< "min "<< min<<"max "<<max <<"media "<<media<<std::endl; 
 
    					delete hist;
    				}
    			}
-   		}
+   		} //end while
 
    		out_dat.close();
    		std::cout<<"Vuoi proseguire con lo studio della linearità? Premere 1 se si, 0 altrimenti:"<<std::endl;
-   		std::cin>>c;
-   		if(c!=1 && c!=0){
+   		std::cin>>analyze_linearity;
+   		while(analyze_linearity!=1 && analyze_linearity!=0){ //changed if in while, otherwise it would only check once SP 15/05/2020
    			std::cout<<"L'opzione selezionata non è valida, scegliere nuovamente tra le opzioni sopra."<<std::endl;
-   			std::cin >> c;
+   			std::cin >> analyze_linearity;
    		}
    	}
 
-   	if(a==2 || c==1){
+   	if(mode==MODE_LIN || analyze_linearity==1){
 
    		int N;
    		std::cout<<"Quanti picchi gaussiani osservi in tutto?"<<std::endl;
