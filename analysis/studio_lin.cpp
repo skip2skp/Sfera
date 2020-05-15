@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
 		while(!range.eof()) {
 
 		        TString rootFileName;
-			range.ignore(200, delimiter);
+			//range.ignore(200, delimiter);
 			range>>rootFileName;
 			TFile* rootFile = new TFile(rootFileName);
 			std::cout<<"Reading data from root file "<<rootFileName<<std::endl;
@@ -90,10 +90,10 @@ int main(int argc, char* argv[]) {
 			entries = tree->GetEntries();
 
 			std::string sourceName;
-			range.ignore(200, delimiter);
+			//range.ignore(200, delimiter);
 			range>>sourceName;
  			
- 			range.ignore(200, delimiter);
+ 			//range.ignore(200, delimiter);
 			range >> npicchi;
 
 			for(int k=0; k<npicchi;k++){
@@ -110,7 +110,7 @@ int main(int argc, char* argv[]) {
 					// LEVA COMMENT
 					
 					double min, max;
- 					range.ignore(200, delimiter);
+ 					//range.ignore(200, delimiter);
  					range>>min>>max;
 
 					if(draw_hist==1){
