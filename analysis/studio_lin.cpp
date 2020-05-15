@@ -75,7 +75,6 @@ int main(int argc, char* argv[]) {
 		        TString rootFileName;
 			range.ignore(200, delimiter);
 			range>>rootFileName;
-			std::cout<<rootFileName<<std::endl; // CHECK
 			TFile* rootFile = new TFile(rootFileName);
 			std::cout<<"Reading data from root file "<<rootFileName<<std::endl;
 
@@ -126,7 +125,7 @@ int main(int argc, char* argv[]) {
   						hist->SetYTitle("N eventi");
   						hist->SetStats(0);
  						hist->Draw(); // Disegna l'istogramma
- 						c->SaveAs(Form("%s/istogramma_cariche_sor_%s_canale_%d.pdf", plotsDir.c_str(),sourceName,j+1));
+ 						c->SaveAs(Form("%s/istogramma_cariche_sor_%s_canale_%d.pdf", plotsDir.c_str(),sourceName.c_str(),j+1));
 
  						delete c;
  					}
