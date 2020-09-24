@@ -29,7 +29,7 @@
 #include "TPaveText.h"
 #include "TLatex.h"
 
-#define NCH 15 // no channels
+#define NCH 16 // no channels
 #define NBIN 100 // no bins
 
 #define CMIN 50 // min accepted value of deposited charge
@@ -42,7 +42,7 @@
 
 int main(int argc, char* argv[]) {
 
-	if(argc!=1) {
+	if(argc!=2) {
 		std::cout<<"Usage: ./myexe.exe myfile.root"<<std::endl;
 		exit(ERROR_USAGE);
 	}
@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
 
   	TTree* tree = (TTree*) rootFile->Get("tree");
   	if(!tree) {
-    	std::cout<<"Error, no tree called tree in "<<argv[1]<<". Exiting."<<std::endl;
+    	std::cout<<"Error, no tree called \"tree\" in "<<argv[1]<<". Exiting."<<std::endl;
     	exit(ERROR_NOTREE);
   	}
 
@@ -67,20 +67,20 @@ int main(int argc, char* argv[]) {
   	tree->SetBranchAddress("vcharge", &vcharge);
 
   	int nEntries = tree->GetEntries();  // # di righe tree = # eventi
-  
+
   	//crea cartelle e sottocartelle per i plot
-  	std::string plotsDir(Form("spettro_Cesio/"));
- 	system( Form("mkdir -p %s", plotsDir.c_str()) );
+  	//std::string plotsDir(Form("spettro_Cesio/"));
+ 	  //system( Form("mkdir -p %s", plotsDir.c_str()) );
 
 
-  	Double_t xmin[NCH]={}; //... to be initialized // starting points
-  	Double_t xmax[NCH]={};	//... to be initialized // end points
+  	Double_t xmin[NCH]={1200, 480,0,780,700, 400, 1250, 1000, 1600, 980, 650, 1330, 580, 2300, 0, 0}; //... to be initialized // starting points
+  	Double_t xmax[NCH]={1500, 520,0,1000, 800, 450,1400, 1150, 1900, 1100, 750, 1550, 620, 2700, 0, 0};	//... to be initialized // end points
 
 
   	std::ofstream out_k; // output file for calibration constants
   	std::string outf_name="calibration_const.dat";
   	out_k.open(outf_name);
-  
+
   	if(!out_k.is_open()) {
   		std::cout<<"Error: could open file "<<outf_name<<". Exiting."<<std::endl;
   		exit(ERROR_NOFILE);
@@ -93,37 +93,37 @@ int main(int argc, char* argv[]) {
 
   /***********************************BEGIN FIT AND K CALC*********************************************************************************/
 
-	for (int channel=0; channel<NCH; channel++) {  
+	for (int channel=0; channel<NCH; channel++) {
 
 		TH1F* spettro = new TH1F("spettro","", NBIN, 0, xmax[channel]);
-        
-    
+
     	for (int entry=0; entry<nEntries; entry++) {
 
-    		tree->GetEntry(entry); 	// prendi l'evento i-esimo 
+    		tree->GetEntry(entry); 	// prendi l'evento i-esimo
 
-        	if(-vcharge[channel]>CMIN){spettro -> Fill(-vcharge[channel]);} //riempi l'isto 
-
+        	if(-vcharge[channel]>CMIN){spettro -> Fill(-vcharge[channel]);} //riempi l'isto
 
        		TF1 *fitgaus = new TF1("fitgaus", "gaus", xmin[channel], xmax[channel]); //fit gaussiana 1
-    
-    		TFitResultPtr gaussian_fit = spettro->Fit("fitgaus1", "SRQ");  //“Q” Quiet mode  “S” result in TFitResultPtr ""R” Use the range 
-    
-   			mean =gaussian_fit->Parameter(1);
-   			var =gaussian_fit->Parameter(2);//first estimate of mean and sigma for finer fit						
-    
-    		fitgaus->SetRange(mean-var, mean+2*var); // Set range of fit around the mean returned by the first. The range is asymmetrical, being larger on the right. 
 
-   			gaussian_fit = spettro->Fit("fitgaus1", "SRQ");  //“Q” Quiet mode  “S” result in TFitResultPtr ""R” Use the range 
-    		amp  = gaussian_fit->Parameter(0);	
-	    	mean = gaussian_fit->Parameter(1);
-	   		var = gaussian_fit->Parameter(2);
-	   		mean_err = gaussian_fit->ParError(1);
-	    	var_err = gaussian_fit->ParError(2);
-	    	chi2 =gaussian_fit->Chi2();		
-	    	Ndf = gaussian_fit->Ndf(); //all the parameters
+					fitgaus->SetParameter(1, (xmin[channel]+xmax[channel])/2.);
 
-    
+    			TFitResultPtr gaussian_fit = spettro->Fit("fitgaus", "SRQ");  //“Q” Quiet mode  “S” result in TFitResultPtr ""R” Use the range
+
+   				mean =gaussian_fit->Parameter(1);
+   				var =gaussian_fit->Parameter(2);//first estimate of mean and sigma for finer fit
+
+    			fitgaus->SetRange(mean-var, mean+2*var); // Set range of fit around the mean returned by the first. The range is asymmetrical, being larger on the right.
+
+   				gaussian_fit = spettro->Fit("fitgaus1", "SRQ");  //“Q” Quiet mode  “S” result in TFitResultPtr ""R” Use the range
+    			amp  = gaussian_fit->Parameter(0);
+	    		mean = gaussian_fit->Parameter(1);
+	   			var = gaussian_fit->Parameter(2);
+					mean_err = gaussian_fit->ParError(1);
+	    		var_err = gaussian_fit->ParError(2);
+	    		chi2 =gaussian_fit->Chi2();
+	    		Ndf = gaussian_fit->Ndf(); //all the parameters
+
+
 	    /********************* calcolo costanti calibrazione con errore *******************************************/
 
 	    	k=mean/PEAK; // calibration constant // pC/keV
@@ -140,18 +140,3 @@ int main(int argc, char* argv[]) {
 	return(0);
 
 }
-    s
-    
-  
-
-
-    
-
-   
-
-
-
-
-
-
-
