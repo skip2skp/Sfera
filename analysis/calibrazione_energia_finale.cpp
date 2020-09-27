@@ -34,7 +34,7 @@
 
 int main(int argc, char* argv[]) {
 
-  std::ifstream efs (argv[2], std::ifstream::in);
+  std::ifstream ifs (argv[2], std::ifstream::in);
   std::ifstream ofs (argv[3], std::ifstream::in);
 
   //QUESTI DUE VANNO PASSATI DAL PROGRAMMA DEL FIT--PARI
@@ -44,17 +44,18 @@ int main(int argc, char* argv[]) {
   //QUESTI DUE VANNO PASSATI DAL PROGRAMMA DEL FIT--DISPARI
   double picco_FE_d[NCH]={0.};
   double inc_picco_FE_d[NCH]={0.};
+
   for(int i=0;i<NCH;i++){
     double a=0;
     double b=0;
-    efs >>picco_FE_p[i]>>a>>b>>inc_picco_FE_p[i];
+    ifs >>picco_FE_p[i]>>a>>b>>inc_picco_FE_p[i];
   }
+
   for(int i=0;i<NCH;i++){
     double c=0;
     double d=0;
     ofs >>picco_FE_d[i]>>c>>d>>inc_picco_FE_d[i];
   }
-
 
   TString rootFileName(argv[1]);
   TFile* rootFile = new TFile(rootFileName);
@@ -62,7 +63,7 @@ int main(int argc, char* argv[]) {
 
   TTree* tree = (TTree*) rootFile->Get("tree");
   if(!tree) {
-    std::cout<<"Error, no tree called tree in "<<argv[1 ]<<". Exiting."<<std::endl;
+    std::cout<<"Error, no tree called tree in "<<argv[1]<<". Exiting."<<std::endl;
     exit(ERROR_NOTREE);
   }
 
@@ -128,7 +129,7 @@ int main(int argc, char* argv[]) {
 
   for(int channel=0; channel<NCH; channel++){
 
-    channel_axis[channel]=channel+1; 
+    channel_axis[channel]=channel+1;
 
     k_cal_normalizzato[channel]=k_cal[channel]/k_medio_cal;
     inc_k_cal_normalizzato[channel]= inc_k_cal[channel]/(k_medio_cal*k_medio_cal) + (k_cal_normalizzato[channel]*k_cal_normalizzato[channel])/(k_medio_cal*k_medio_cal)*(inc_k_medio_cal*inc_k_medio_cal);
@@ -138,12 +139,8 @@ int main(int argc, char* argv[]) {
     inc_k_test_normalizzato[channel]=inc_k_test[channel]/(k_medio_test*k_medio_test) + (k_test_normalizzato[channel]*k_test_normalizzato[channel])/(k_medio_test*k_medio_test)*(inc_k_medio_test*inc_k_medio_test);
     inc_k_test_normalizzato[channel] = sqrt(inc_k_test_normalizzato[channel]);
     std::cout <<"channel: "<< channel << "K: " << k_test_normalizzato[channel] << "Inc: " << inc_k_test_normalizzato[channel] << std::endl;
+
   }
-
-
-
-
-
 
 
   TCanvas* c2 = new TCanvas("c2", "Grafico Calibrazione Energie");
@@ -169,24 +166,13 @@ int main(int argc, char* argv[]) {
 
   c2->SaveAs(Form("%s/calibrazione_energie.pdf", plotsDir.c_str()));
 
-
-
-
-
-
-
-
-
-
-
-
-    //A E B DEVONO ESSERE I DUE CANALI CHE GLI PASSIAMO
+//A E B DEVONO ESSERE I DUE CANALI CHE GLI PASSIAMO
 
   int A, B;
 
-    // Si fa passare i due canali da riga di comando
+// Si fa passare i due canali da riga di comando
 
-  std::cout<<"Scegliere i due canali per la sovrapposizione delgi istogrammi:"<<std::endl;
+  std::cout<<"Scegliere i due canali per la sovrapposizione degli istogrammi:"<<std::endl;
   std::cout<<"Canale: ";
   std::cin>>A;
   std::cout<<"\nCanale: ";
