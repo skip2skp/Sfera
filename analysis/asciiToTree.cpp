@@ -25,12 +25,12 @@ int main( int argc, char* argv[] ) {
 
   std::string fileName(argv[1]);
 
-  if( fileName.rfind("../data/",0)==0 )
-    fileName.erase(0, 8);
+  if( fileName.rfind("../data/finali/",0)==0 )
+    fileName.erase(0, 15);
 
-  std::ifstream fs(Form("../data/%s", fileName.c_str()));
+  std::ifstream fs(Form("../data/finali/%s", fileName.c_str()));
   if( !fs.good() ) {
-    std::cout << "-> No file called '" << fileName << "' found in '../data/'. Exiting." << std::endl;
+    std::cout << "-> No file called '" << fileName << "' found in '../data/finali/'. Exiting." << std::endl;
     exit(1);
   }
 
@@ -89,7 +89,7 @@ int main( int argc, char* argv[] ) {
       std::string word;
 
       while((pos = line.find("  ")) != std::string::npos) {
-      	replace(line,"  ", delimiter);
+        replace(line,"  ", delimiter);
       }
       
       while ((pos = line.find(delimiter)) != std::string::npos) {
@@ -133,8 +133,8 @@ int main( int argc, char* argv[] ) {
       }
 
       if( words[0]=="===" && words[1]=="EVENT" && wasReadingEvent==false) {
-	ev            = atoi(words[2].c_str());	
-	//std::cout << ev << std::endl;
+  ev            = atoi(words[2].c_str()); 
+  //std::cout << ev << std::endl;
       }
 
     } // while get lines
@@ -157,5 +157,3 @@ int main( int argc, char* argv[] ) {
   return 0;
 
 }
-
-
